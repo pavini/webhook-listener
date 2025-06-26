@@ -397,6 +397,7 @@
                     maxlength="50"
                 >
                 <button class="create-btn" id="createBtn" onclick="createEndpoint()">Criar Endpoint</button>
+                <button class="clear-btn" id="newEndpointBtn" onclick="clearEndpointAndCreateNew()" style="display: none;">Novo Endpoint</button>
             </div>
             
             <div class="error-message" id="errorMessage"></div>
@@ -524,6 +525,9 @@
                 // Set current endpoint
                 currentEndpoint = data;
                 
+                // Save to localStorage
+                localStorage.setItem('webhookEndpoint', JSON.stringify(data));
+                
                 // Join socket room
                 socket.emit('join-endpoint', data.id);
                 
@@ -538,6 +542,7 @@
                 document.getElementById('controlsSection').style.display = 'flex';
                 document.getElementById('requestsContainer').style.display = 'block';
                 document.getElementById('clearBtn').disabled = false;
+                document.getElementById('newEndpointBtn').style.display = 'inline-block';
                 
                 // Load existing requests
                 loadRequests();
@@ -764,6 +769,74 @@ Endpoint ID: ${request.endpoint_id}</div>
                 createEndpoint();
             }
         });
+
+        // Load saved endpoint on page load
+        function loadSavedEndpoint() {
+            const savedEndpoint = localStorage.getItem('webhookEndpoint');
+            if (savedEndpoint) {
+                try {
+                    const endpointData = JSON.parse(savedEndpoint);
+                    currentEndpoint = endpointData;
+                    
+                    // Join socket room
+                    socket.emit('join-endpoint', endpointData.id);
+                    
+                    // Update UI
+                    document.getElementById('endpointUrl').textContent = endpointData.url;
+                    document.getElementById('endpointUrlContainer').classList.add('show');
+                    document.getElementById('endpointInfo').classList.add('show');
+                    document.getElementById('endpointName').textContent = `Endpoint: ${endpointData.name}`;
+                    document.getElementById('endpointCreated').textContent = `Criado em: ${new Date(endpointData.created_at).toLocaleString('pt-BR')}`;
+                    
+                    // Show controls and requests
+                    document.getElementById('controlsSection').style.display = 'flex';
+                    document.getElementById('requestsContainer').style.display = 'block';
+                    document.getElementById('clearBtn').disabled = false;
+                    document.getElementById('newEndpointBtn').style.display = 'inline-block';
+                    
+                    // Load existing requests
+                    loadRequests();
+                    
+                    // Update connection status
+                    updateConnectionStatus();
+                    
+                } catch (error) {
+                    console.error('Error loading saved endpoint:', error);
+                    localStorage.removeItem('webhookEndpoint');
+                }
+            }
+        }
+
+        function clearEndpointAndCreateNew() {
+            if (confirm('Tem certeza que deseja criar um novo endpoint? O endpoint atual será perdido.')) {
+                // Clear localStorage
+                localStorage.removeItem('webhookEndpoint');
+                
+                // Reset current endpoint
+                currentEndpoint = null;
+                requests = [];
+                
+                // Hide UI elements
+                document.getElementById('endpointUrlContainer').classList.remove('show');
+                document.getElementById('endpointInfo').classList.remove('show');
+                document.getElementById('controlsSection').style.display = 'none';
+                document.getElementById('requestsContainer').style.display = 'none';
+                document.getElementById('newEndpointBtn').style.display = 'none';
+                
+                // Reset requests list
+                updateRequestsList();
+                updateRequestCount();
+                updateConnectionStatus();
+                
+                // Clear input
+                document.getElementById('endpointName').value = '';
+                
+                showSuccess('Agora você pode criar um novo endpoint!');
+            }
+        }
+
+        // Load saved endpoint when page loads
+        window.addEventListener('load', loadSavedEndpoint);
 
         // Initial connection status
         updateConnectionStatus();
