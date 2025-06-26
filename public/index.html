@@ -39,17 +39,71 @@
             margin-bottom: 10px;
         }
 
-        .webhook-url {
+        .endpoint-section {
+            background-color: #161b22;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            margin-bottom: 20px;
+        }
+
+        .endpoint-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .endpoint-input {
+            flex: 1;
+            padding: 10px;
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #e6edf3;
+            font-size: 14px;
+        }
+
+        .endpoint-input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        .create-btn {
+            background-color: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .create-btn:hover {
+            background-color: #2ea043;
+        }
+
+        .create-btn:disabled {
+            background-color: #30363d;
+            cursor: not-allowed;
+        }
+
+        .endpoint-url {
             background-color: #21262d;
             padding: 15px;
             border-radius: 6px;
             border: 1px solid #30363d;
-            margin: 20px 0;
+            margin: 15px 0;
             word-break: break-all;
             position: relative;
+            display: none;
         }
 
-        .webhook-url code {
+        .endpoint-url.show {
+            display: block;
+        }
+
+        .endpoint-url code {
             color: #7ee787;
             font-family: 'Courier New', monospace;
         }
@@ -69,6 +123,30 @@
 
         .copy-btn:hover {
             background-color: #2ea043;
+        }
+
+        .endpoint-info {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #0d1117;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+
+        .endpoint-info.show {
+            display: block;
+        }
+
+        .endpoint-name {
+            font-weight: bold;
+            color: #58a6ff;
+            margin-bottom: 5px;
+        }
+
+        .endpoint-created {
+            color: #8b949e;
+            font-size: 14px;
         }
 
         .controls {
@@ -96,6 +174,11 @@
             background-color: #f85149;
         }
 
+        .clear-btn:disabled {
+            background-color: #30363d;
+            cursor: not-allowed;
+        }
+
         .status {
             display: flex;
             align-items: center;
@@ -108,6 +191,10 @@
             border-radius: 50%;
             background-color: #7ee787;
             animation: pulse 2s infinite;
+        }
+
+        .status-dot.disconnected {
+            background-color: #f85149;
         }
 
         @keyframes pulse {
@@ -218,9 +305,41 @@
             color: #8b949e;
         }
 
+        .no-endpoint {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+        }
+
         .request-count {
             color: #8b949e;
             font-size: 14px;
+        }
+
+        .error-message {
+            background-color: #da3633;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background-color: #238636;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
         }
     </style>
 </head>
@@ -228,30 +347,50 @@
     <div class="container">
         <div class="header">
             <h1>🔗 Webhook Listener</h1>
-            <p>Capture e monitore webhooks em tempo real</p>
-            <div class="webhook-url">
-                <code id="webhookUrl">http://localhost:3000/webhook/[seu-endpoint]</code>
-                <button class="copy-btn" onclick="copyWebhookUrl()">Copiar</button>
-            </div>
-            <p style="color: #8b949e; font-size: 14px; margin-top: 10px;">
-                Substitua [seu-endpoint] por qualquer nome que desejar (ex: /webhook/test, /webhook/payment, etc.)
-            </p>
+            <p>Capture e monitore webhooks em tempo real - Multi-usuário</p>
         </div>
 
-        <div class="controls">
+        <div class="endpoint-section">
+            <h3>Criar Novo Endpoint</h3>
+            <div class="endpoint-form">
+                <input 
+                    type="text" 
+                    class="endpoint-input" 
+                    id="endpointName" 
+                    placeholder="Nome do seu endpoint (ex: meu-app-payment)"
+                    maxlength="50"
+                >
+                <button class="create-btn" id="createBtn" onclick="createEndpoint()">Criar Endpoint</button>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+            
+            <div class="endpoint-url" id="endpointUrlContainer">
+                <code id="endpointUrl"></code>
+                <button class="copy-btn" onclick="copyEndpointUrl()">Copiar</button>
+            </div>
+            
+            <div class="endpoint-info" id="endpointInfo">
+                <div class="endpoint-name" id="endpointName"></div>
+                <div class="endpoint-created" id="endpointCreated"></div>
+            </div>
+        </div>
+
+        <div class="controls" id="controlsSection" style="display: none;">
             <div class="status">
-                <div class="status-dot"></div>
-                <span>Conectado</span>
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Desconectado</span>
                 <span class="request-count" id="requestCount">0 requests</span>
             </div>
-            <button class="clear-btn" onclick="clearRequests()">Limpar Todas</button>
+            <button class="clear-btn" id="clearBtn" onclick="clearRequests()" disabled>Limpar Requests</button>
         </div>
 
-        <div class="requests-container">
+        <div class="requests-container" id="requestsContainer" style="display: none;">
             <div id="requestsList">
-                <div class="no-requests">
-                    <h3>Aguardando webhooks...</h3>
-                    <p>Envie uma requisição para a URL acima para ver os detalhes aqui</p>
+                <div class="no-endpoint">
+                    <h3>Nenhum endpoint ativo</h3>
+                    <p>Crie um endpoint acima para começar a receber webhooks</p>
                 </div>
             </div>
         </div>
@@ -259,11 +398,20 @@
 
     <script>
         const socket = io();
+        let currentEndpoint = null;
         let requests = [];
+        let isConnected = false;
 
         socket.on('connect', () => {
             console.log('Connected to server');
-            loadRequests();
+            isConnected = true;
+            updateConnectionStatus();
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            isConnected = false;
+            updateConnectionStatus();
         });
 
         socket.on('new-request', (request) => {
@@ -278,27 +426,135 @@
             updateRequestCount();
         });
 
-        function loadRequests() {
-            fetch('/api/requests')
-                .then(response => response.json())
-                .then(data => {
+        function updateConnectionStatus() {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            if (isConnected) {
+                statusDot.classList.remove('disconnected');
+                statusText.textContent = currentEndpoint ? 'Monitorando' : 'Conectado';
+            } else {
+                statusDot.classList.add('disconnected');
+                statusText.textContent = 'Desconectado';
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            setTimeout(() => {
+                successDiv.classList.remove('show');
+            }, 3000);
+        }
+
+        async function createEndpoint() {
+            const nameInput = document.getElementById('endpointName');
+            const createBtn = document.getElementById('createBtn');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                showError('Nome do endpoint é obrigatório');
+                return;
+            }
+            
+            createBtn.disabled = true;
+            createBtn.textContent = 'Criando...';
+            
+            try {
+                const response = await fetch('/api/endpoints', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao criar endpoint');
+                }
+                
+                // Set current endpoint
+                currentEndpoint = data;
+                
+                // Join socket room
+                socket.emit('join-endpoint', data.id);
+                
+                // Update UI
+                document.getElementById('endpointUrl').textContent = data.url;
+                document.getElementById('endpointUrlContainer').classList.add('show');
+                document.getElementById('endpointInfo').classList.add('show');
+                document.getElementById('endpointName').textContent = `Endpoint: ${data.name}`;
+                document.getElementById('endpointCreated').textContent = `Criado em: ${new Date(data.created_at).toLocaleString('pt-BR')}`;
+                
+                // Show controls and requests
+                document.getElementById('controlsSection').style.display = 'flex';
+                document.getElementById('requestsContainer').style.display = 'block';
+                document.getElementById('clearBtn').disabled = false;
+                
+                // Load existing requests
+                loadRequests();
+                
+                // Clear form
+                nameInput.value = '';
+                
+                showSuccess('Endpoint criado com sucesso!');
+                updateConnectionStatus();
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Criar Endpoint';
+            }
+        }
+
+        async function loadRequests() {
+            if (!currentEndpoint) return;
+            
+            try {
+                const response = await fetch(`/api/endpoints/${currentEndpoint.id}/requests`);
+                const data = await response.json();
+                
+                if (response.ok) {
                     requests = data;
                     updateRequestsList();
                     updateRequestCount();
-                })
-                .catch(error => {
-                    console.error('Error loading requests:', error);
-                });
+                }
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            }
         }
 
         function updateRequestsList() {
             const requestsList = document.getElementById('requestsList');
             
+            if (!currentEndpoint) {
+                requestsList.innerHTML = `
+                    <div class="no-endpoint">
+                        <h3>Nenhum endpoint ativo</h3>
+                        <p>Crie um endpoint acima para começar a receber webhooks</p>
+                    </div>
+                `;
+                return;
+            }
+            
             if (requests.length === 0) {
                 requestsList.innerHTML = `
                     <div class="no-requests">
                         <h3>Aguardando webhooks...</h3>
-                        <p>Envie uma requisição para a URL acima para ver os detalhes aqui</p>
+                        <p>Envie uma requisição para a URL do seu endpoint para ver os detalhes aqui</p>
                     </div>
                 `;
                 return;
@@ -334,7 +590,8 @@
                         <div class="detail-section">
                             <h4>Info</h4>
                             <div class="detail-content">IP: ${request.ip}
-ID: ${request.id}</div>
+ID: ${request.id}
+Endpoint ID: ${request.endpoint_id}</div>
                         </div>
                     </div>
                 </div>
@@ -361,13 +618,13 @@ ID: ${request.id}</div>
                 `${count} request${count !== 1 ? 's' : ''}`;
         }
 
-        function copyWebhookUrl() {
-            const url = document.getElementById('webhookUrl').textContent;
+        function copyEndpointUrl() {
+            const url = document.getElementById('endpointUrl').textContent;
             navigator.clipboard.writeText(url).then(() => {
                 const btn = event.target;
                 const originalText = btn.textContent;
                 btn.textContent = 'Copiado!';
-                btn.style.backgroundColor = '#238636';
+                btn.style.backgroundColor = '#2ea043';
                 setTimeout(() => {
                     btn.textContent = originalText;
                     btn.style.backgroundColor = '#238636';
@@ -375,25 +632,38 @@ ID: ${request.id}</div>
             });
         }
 
-        function clearRequests() {
-            if (confirm('Tem certeza que deseja limpar todas as requisições?')) {
-                fetch('/api/requests', { method: 'DELETE' })
-                    .then(() => {
+        async function clearRequests() {
+            if (!currentEndpoint) return;
+            
+            if (confirm('Tem certeza que deseja limpar todas as requisições deste endpoint?')) {
+                try {
+                    const response = await fetch(`/api/endpoints/${currentEndpoint.id}/requests`, { 
+                        method: 'DELETE' 
+                    });
+                    
+                    if (response.ok) {
                         requests = [];
                         updateRequestsList();
                         updateRequestCount();
-                    })
-                    .catch(error => {
-                        console.error('Error clearing requests:', error);
-                    });
+                        showSuccess('Requests limpos com sucesso!');
+                    } else {
+                        throw new Error('Erro ao limpar requests');
+                    }
+                } catch (error) {
+                    showError(error.message);
+                }
             }
         }
 
-        // Update webhook URL based on current host
-        document.addEventListener('DOMContentLoaded', () => {
-            const webhookUrl = `${window.location.protocol}//${window.location.host}/webhook/[seu-endpoint]`;
-            document.getElementById('webhookUrl').textContent = webhookUrl;
+        // Allow Enter key to create endpoint
+        document.getElementById('endpointName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                createEndpoint();
+            }
         });
+
+        // Initial connection status
+        updateConnectionStatus();
     </script>
 </body>
 </html>
