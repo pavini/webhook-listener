@@ -53,6 +53,11 @@ db.serialize(() => {
     endpoints_deleted INTEGER,
     requests_deleted INTEGER
   )`);
+
+  // Create indexes for better performance
+  db.run(`CREATE INDEX IF NOT EXISTS idx_requests_timestamp ON requests(timestamp)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_requests_endpoint_id ON requests(endpoint_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_endpoints_created_at ON endpoints(created_at)`);
 });
 
 app.use(express.static('public'));
