@@ -137,6 +137,38 @@ app.delete('/api/endpoints/:id/requests', (req, res) => {
   });
 });
 
+// Delete specific request
+app.delete('/api/requests/:requestId', (req, res) => {
+  const { requestId } = req.params;
+  
+  // First get the endpoint_id to notify clients
+  db.get('SELECT endpoint_id FROM requests WHERE id = ?', [requestId], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    if (!row) {
+      res.status(404).json({ error: 'Request not found' });
+      return;
+    }
+    
+    const endpointId = row.endpoint_id;
+    
+    // Delete the request
+    db.run('DELETE FROM requests WHERE id = ?', [requestId], (err) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      // Notify clients about the deleted request
+      io.to(endpointId).emit('request-deleted', requestId);
+      res.json({ message: 'Request deleted successfully' });
+    });
+  });
+});
+
 app.all('/webhook/:endpointId', (req, res) => {
   const { endpointId } = req.params;
   
