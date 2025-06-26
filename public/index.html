@@ -768,10 +768,12 @@
                         <div class="request-header">
                             <div>
                                 <span class="request-method method-${request.method}">${request.method}</span>
-                                <button class="action-btn delete" onclick="deleteRequest(event, '${request.id}')" title="Deletar request" style="margin-left: 10px;">🗑️</button>
                                 <span style="margin-left: 10px; color: #8b949e; font-size: 12px;">Clique para ver detalhes</span>
                             </div>
-                            <div class="request-time">${new Date(request.timestamp).toLocaleString('pt-BR')}</div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="request-time">${new Date(request.timestamp).toLocaleString('pt-BR')}</div>
+                                <button class="action-btn delete" onclick="deleteRequest(event, '${request.id}')" title="Deletar request">🗑️</button>
+                            </div>
                         </div>
                         <div class="request-url">${request.url}</div>
                     </div>
@@ -1061,10 +1063,6 @@ Endpoint ID: ${request.endpoint_id}`;
 
         async function deleteRequest(event, requestId) {
             event.stopPropagation(); // Prevent triggering the row click
-            
-            if (!confirm('Tem certeza que deseja deletar este request?')) {
-                return;
-            }
             
             try {
                 const response = await fetch(`/api/requests/${requestId}`, {
