@@ -42,12 +42,14 @@ const dbPath = process.env.NODE_ENV === 'production' ? './data/webhooks.db' : '.
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
+  // Create endpoints table
   db.run(`CREATE TABLE IF NOT EXISTS endpoints (
     id TEXT PRIMARY KEY,
     name TEXT,
     created_at INTEGER
   )`);
   
+  // Create requests table with all columns
   db.run(`CREATE TABLE IF NOT EXISTS requests (
     id TEXT PRIMARY KEY,
     endpoint_id TEXT,
@@ -61,6 +63,50 @@ db.serialize(() => {
     FOREIGN KEY (endpoint_id) REFERENCES endpoints (id)
   )`);
 
+  // Check if endpoint_id column exists and add it if not (migration)
+  db.all("PRAGMA table_info(requests)", (err, columns) => {
+    if (err) {
+      console.error('Error checking table schema:', err);
+      return;
+    }
+    
+    const hasEndpointId = columns.some(col => col.name === 'endpoint_id');
+    if (!hasEndpointId) {
+      console.log('Adding endpoint_id column to requests table...');
+      db.run(`ALTER TABLE requests ADD COLUMN endpoint_id TEXT`, (err) => {
+        if (err) {
+          console.error('Error adding endpoint_id column:', err);
+        } else {
+          console.log('Successfully added endpoint_id column');
+        }
+      });
+    }
+
+    const hasQuery = columns.some(col => col.name === 'query');
+    if (!hasQuery) {
+      console.log('Adding query column to requests table...');
+      db.run(`ALTER TABLE requests ADD COLUMN query TEXT`, (err) => {
+        if (err) {
+          console.error('Error adding query column:', err);
+        } else {
+          console.log('Successfully added query column');
+        }
+      });
+    }
+
+    const hasIp = columns.some(col => col.name === 'ip');
+    if (!hasIp) {
+      console.log('Adding ip column to requests table...');
+      db.run(`ALTER TABLE requests ADD COLUMN ip TEXT`, (err) => {
+        if (err) {
+          console.error('Error adding ip column:', err);
+        } else {
+          console.log('Successfully added ip column');
+        }
+      });
+    }
+  });
+
   // Create cleanup log table
   db.run(`CREATE TABLE IF NOT EXISTS cleanup_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,10 +115,12 @@ db.serialize(() => {
     requests_deleted INTEGER
   )`);
 
-  // Create indexes for better performance
-  db.run(`CREATE INDEX IF NOT EXISTS idx_requests_timestamp ON requests(timestamp)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_requests_endpoint_id ON requests(endpoint_id)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_endpoints_created_at ON endpoints(created_at)`);
+  // Create indexes for better performance (will be created after table migrations)
+  setTimeout(() => {
+    db.run(`CREATE INDEX IF NOT EXISTS idx_requests_timestamp ON requests(timestamp)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_requests_endpoint_id ON requests(endpoint_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_endpoints_created_at ON endpoints(created_at)`);
+  }, 1000);
 });
 
 // Health check endpoint
