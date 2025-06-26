@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Listener</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117;
+            color: #e6edf3;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #161b22;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+
+        .header h1 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+
+        .webhook-url {
+            background-color: #21262d;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            margin: 20px 0;
+            word-break: break-all;
+            position: relative;
+        }
+
+        .webhook-url code {
+            color: #7ee787;
+            font-family: 'Courier New', monospace;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: #238636;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-btn:hover {
+            background-color: #2ea043;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #161b22;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+
+        .clear-btn {
+            background-color: #da3633;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .clear-btn:hover {
+            background-color: #f85149;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #7ee787;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .requests-container {
+            background-color: #161b22;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            overflow: hidden;
+        }
+
+        .request-item {
+            border-bottom: 1px solid #30363d;
+            padding: 20px;
+            transition: background-color 0.2s;
+        }
+
+        .request-item:hover {
+            background-color: #21262d;
+        }
+
+        .request-item:last-child {
+            border-bottom: none;
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .request-method {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .method-GET { background-color: #238636; }
+        .method-POST { background-color: #fd7e14; }
+        .method-PUT { background-color: #6f42c1; }
+        .method-DELETE { background-color: #dc3545; }
+        .method-PATCH { background-color: #20c997; }
+
+        .request-time {
+            color: #8b949e;
+            font-size: 14px;
+        }
+
+        .request-url {
+            color: #58a6ff;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
+        .request-details {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .request-details.show {
+            display: block;
+        }
+
+        .detail-section {
+            margin-bottom: 15px;
+        }
+
+        .detail-section h4 {
+            color: #f0f6fc;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .detail-content {
+            background-color: #0d1117;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #30363d;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: #58a6ff;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .expand-btn:hover {
+            text-decoration: underline;
+        }
+
+        .no-requests {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+        }
+
+        .request-count {
+            color: #8b949e;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 Webhook Listener</h1>
+            <p>Capture e monitore webhooks em tempo real</p>
+            <div class="webhook-url">
+                <code id="webhookUrl">http://localhost:3000/webhook/[seu-endpoint]</code>
+                <button class="copy-btn" onclick="copyWebhookUrl()">Copiar</button>
+            </div>
+            <p style="color: #8b949e; font-size: 14px; margin-top: 10px;">
+                Substitua [seu-endpoint] por qualquer nome que desejar (ex: /webhook/test, /webhook/payment, etc.)
+            </p>
+        </div>
+
+        <div class="controls">
+            <div class="status">
+                <div class="status-dot"></div>
+                <span>Conectado</span>
+                <span class="request-count" id="requestCount">0 requests</span>
+            </div>
+            <button class="clear-btn" onclick="clearRequests()">Limpar Todas</button>
+        </div>
+
+        <div class="requests-container">
+            <div id="requestsList">
+                <div class="no-requests">
+                    <h3>Aguardando webhooks...</h3>
+                    <p>Envie uma requisição para a URL acima para ver os detalhes aqui</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let requests = [];
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            loadRequests();
+        });
+
+        socket.on('new-request', (request) => {
+            requests.unshift(request);
+            updateRequestsList();
+            updateRequestCount();
+        });
+
+        socket.on('requests-cleared', () => {
+            requests = [];
+            updateRequestsList();
+            updateRequestCount();
+        });
+
+        function loadRequests() {
+            fetch('/api/requests')
+                .then(response => response.json())
+                .then(data => {
+                    requests = data;
+                    updateRequestsList();
+                    updateRequestCount();
+                })
+                .catch(error => {
+                    console.error('Error loading requests:', error);
+                });
+        }
+
+        function updateRequestsList() {
+            const requestsList = document.getElementById('requestsList');
+            
+            if (requests.length === 0) {
+                requestsList.innerHTML = `
+                    <div class="no-requests">
+                        <h3>Aguardando webhooks...</h3>
+                        <p>Envie uma requisição para a URL acima para ver os detalhes aqui</p>
+                    </div>
+                `;
+                return;
+            }
+
+            requestsList.innerHTML = requests.map(request => `
+                <div class="request-item">
+                    <div class="request-header">
+                        <div>
+                            <span class="request-method method-${request.method}">${request.method}</span>
+                            <button class="expand-btn" onclick="toggleDetails('${request.id}')">Ver Detalhes</button>
+                        </div>
+                        <div class="request-time">${new Date(request.timestamp).toLocaleString('pt-BR')}</div>
+                    </div>
+                    <div class="request-url">${request.url}</div>
+                    <div class="request-details" id="details-${request.id}">
+                        <div class="detail-section">
+                            <h4>Headers</h4>
+                            <div class="detail-content">${JSON.stringify(request.headers, null, 2)}</div>
+                        </div>
+                        ${request.body ? `
+                            <div class="detail-section">
+                                <h4>Body</h4>
+                                <div class="detail-content">${formatBody(request.body)}</div>
+                            </div>
+                        ` : ''}
+                        ${Object.keys(request.query).length > 0 ? `
+                            <div class="detail-section">
+                                <h4>Query Parameters</h4>
+                                <div class="detail-content">${JSON.stringify(request.query, null, 2)}</div>
+                            </div>
+                        ` : ''}
+                        <div class="detail-section">
+                            <h4>Info</h4>
+                            <div class="detail-content">IP: ${request.ip}
+ID: ${request.id}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatBody(body) {
+            try {
+                const parsed = JSON.parse(body);
+                return JSON.stringify(parsed, null, 2);
+            } catch {
+                return body;
+            }
+        }
+
+        function toggleDetails(requestId) {
+            const details = document.getElementById(`details-${requestId}`);
+            details.classList.toggle('show');
+        }
+
+        function updateRequestCount() {
+            const count = requests.length;
+            document.getElementById('requestCount').textContent = 
+                `${count} request${count !== 1 ? 's' : ''}`;
+        }
+
+        function copyWebhookUrl() {
+            const url = document.getElementById('webhookUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copiado!';
+                btn.style.backgroundColor = '#238636';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.backgroundColor = '#238636';
+                }, 2000);
+            });
+        }
+
+        function clearRequests() {
+            if (confirm('Tem certeza que deseja limpar todas as requisições?')) {
+                fetch('/api/requests', { method: 'DELETE' })
+                    .then(() => {
+                        requests = [];
+                        updateRequestsList();
+                        updateRequestCount();
+                    })
+                    .catch(error => {
+                        console.error('Error clearing requests:', error);
+                    });
+            }
+        }
+
+        // Update webhook URL based on current host
+        document.addEventListener('DOMContentLoaded', () => {
+            const webhookUrl = `${window.location.protocol}//${window.location.host}/webhook/[seu-endpoint]`;
+            document.getElementById('webhookUrl').textContent = webhookUrl;
+        });
+    </script>
+</body>
+</html>

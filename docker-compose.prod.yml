@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  webhook-listener:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - webhook-data:/app/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  webhook-data:
+    driver: local
