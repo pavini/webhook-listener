@@ -217,9 +217,10 @@
             top: 10px;
             display: flex;
             gap: 5px;
-            opacity: 0;
+            opacity: 0.3;
             transition: opacity 0.2s ease;
             pointer-events: auto;
+            z-index: 20;
         }
 
         .request-item:hover .request-actions {
@@ -347,6 +348,7 @@
 
         .request-main {
             pointer-events: none;
+            position: relative;
         }
 
         .request-item:last-child {
