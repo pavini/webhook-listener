@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webhook Listener</title>
     <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -122,6 +125,28 @@
         }
 
         .copy-btn:hover {
+            background-color: #2ea043;
+        }
+
+        .detail-section {
+            position: relative;
+        }
+
+        .detail-copy-btn {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background-color: #238636;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 11px;
+            z-index: 10;
+        }
+
+        .detail-copy-btn:hover {
             background-color: #2ea043;
         }
 
@@ -282,6 +307,17 @@
             font-family: 'Courier New', monospace;
             font-size: 12px;
             overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .detail-content.hljs {
+            background-color: #0d1117 !important;
+            padding: 10px;
+        }
+
+        .detail-content pre {
+            margin: 0;
             white-space: pre-wrap;
             word-break: break-all;
         }
@@ -573,29 +609,65 @@
                     <div class="request-details" id="details-${request.id}">
                         <div class="detail-section">
                             <h4>Headers</h4>
-                            <div class="detail-content">${JSON.stringify(request.headers, null, 2)}</div>
+                            <button class="detail-copy-btn" onclick="copyDetailContent('headers-${request.id}')">Copiar</button>
+                            <div class="detail-content" id="headers-${request.id}"></div>
                         </div>
                         ${request.body ? `
                             <div class="detail-section">
                                 <h4>Body</h4>
-                                <div class="detail-content">${formatBody(request.body)}</div>
+                                <button class="detail-copy-btn" onclick="copyDetailContent('body-${request.id}')">Copiar</button>
+                                <div class="detail-content" id="body-${request.id}"></div>
                             </div>
                         ` : ''}
                         ${Object.keys(request.query).length > 0 ? `
                             <div class="detail-section">
                                 <h4>Query Parameters</h4>
-                                <div class="detail-content">${JSON.stringify(request.query, null, 2)}</div>
+                                <button class="detail-copy-btn" onclick="copyDetailContent('query-${request.id}')">Copiar</button>
+                                <div class="detail-content" id="query-${request.id}"></div>
                             </div>
                         ` : ''}
                         <div class="detail-section">
                             <h4>Info</h4>
-                            <div class="detail-content">IP: ${request.ip}
+                            <button class="detail-copy-btn" onclick="copyDetailContent('info-${request.id}')">Copiar</button>
+                            <div class="detail-content" id="info-${request.id}">IP: ${request.ip}
 ID: ${request.id}
 Endpoint ID: ${request.endpoint_id}</div>
                         </div>
                     </div>
                 </div>
             `).join('');
+
+            // Apply syntax highlighting after content is added
+            requests.forEach(request => {
+                // Headers
+                const headersElement = document.getElementById(`headers-${request.id}`);
+                if (headersElement) {
+                    const headersJson = JSON.stringify(request.headers, null, 2);
+                    headersElement.innerHTML = `<pre><code class="language-json">${hljs.highlight(headersJson, {language: 'json'}).value}</code></pre>`;
+                }
+
+                // Body
+                if (request.body) {
+                    const bodyElement = document.getElementById(`body-${request.id}`);
+                    if (bodyElement) {
+                        const bodyContent = formatBody(request.body);
+                        if (isValidJSON(bodyContent)) {
+                            bodyElement.innerHTML = `<pre><code class="language-json">${hljs.highlight(bodyContent, {language: 'json'}).value}</code></pre>`;
+                        } else {
+                            bodyElement.textContent = bodyContent;
+                        }
+                    }
+                }
+
+                // Query Parameters
+                if (Object.keys(request.query).length > 0) {
+                    const queryElement = document.getElementById(`query-${request.id}`);
+                    if (queryElement) {
+                        const queryJson = JSON.stringify(request.query, null, 2);
+                        queryElement.innerHTML = `<pre><code class="language-json">${hljs.highlight(queryJson, {language: 'json'}).value}</code></pre>`;
+                    }
+                }
+            });
         }
 
         function formatBody(body) {
@@ -604,6 +676,15 @@ Endpoint ID: ${request.endpoint_id}</div>
                 return JSON.stringify(parsed, null, 2);
             } catch {
                 return body;
+            }
+        }
+
+        function isValidJSON(str) {
+            try {
+                JSON.parse(str);
+                return true;
+            } catch {
+                return false;
             }
         }
 
@@ -621,6 +702,28 @@ Endpoint ID: ${request.endpoint_id}</div>
         function copyEndpointUrl() {
             const url = document.getElementById('endpointUrl').textContent;
             navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copiado!';
+                btn.style.backgroundColor = '#2ea043';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.backgroundColor = '#238636';
+                }, 2000);
+            });
+        }
+
+        function copyDetailContent(elementId) {
+            const element = document.getElementById(elementId);
+            let content = element.textContent;
+            
+            // If it's a formatted JSON element, get the original unformatted version
+            const preElement = element.querySelector('pre code');
+            if (preElement) {
+                content = preElement.textContent;
+            }
+            
+            navigator.clipboard.writeText(content).then(() => {
                 const btn = event.target;
                 const originalText = btn.textContent;
                 btn.textContent = 'Copiado!';
