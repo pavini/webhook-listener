@@ -771,9 +771,6 @@
                             <div class="detail-content" id="info-${request.id}">
                                 <button class="copy-icon" onclick="copyDetailContent(event, 'info-${request.id}')" title="Copiar">📋</button>
                                 <div class="copy-feedback" id="feedback-info-${request.id}">Copiado!</div>
-                                <div style="padding-right: 35px;">IP: ${request.ip}
-ID: ${request.id}
-Endpoint ID: ${request.endpoint_id}</div>
                             </div>
                         </div>
                     </div>
@@ -821,6 +818,19 @@ Endpoint ID: ${request.endpoint_id}</div>
                         queryElement.appendChild(copyIcon);
                         queryElement.appendChild(copyFeedback);
                     }
+                }
+
+                // Info
+                const infoElement = document.getElementById(`info-${request.id}`);
+                if (infoElement) {
+                    const infoContent = `IP: ${request.ip}
+ID: ${request.id}
+Endpoint ID: ${request.endpoint_id}`;
+                    const copyIcon = infoElement.querySelector('.copy-icon');
+                    const copyFeedback = infoElement.querySelector('.copy-feedback');
+                    infoElement.innerHTML = `<pre><code>${infoContent}</code></pre>`;
+                    infoElement.appendChild(copyIcon);
+                    infoElement.appendChild(copyFeedback);
                 }
 
                 // Restore expanded state
