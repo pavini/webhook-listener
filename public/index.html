@@ -132,22 +132,56 @@
             position: relative;
         }
 
-        .detail-copy-btn {
+        .detail-content {
+            position: relative;
+        }
+
+        .copy-icon {
             position: absolute;
             right: 8px;
             top: 8px;
-            background-color: #238636;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(35, 134, 54, 0.8);
             color: white;
             border: none;
             border-radius: 4px;
-            padding: 4px 8px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             z-index: 10;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+            pointer-events: auto;
         }
 
-        .detail-copy-btn:hover {
-            background-color: #2ea043;
+        .copy-icon:hover {
+            background-color: rgba(46, 160, 67, 0.9);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .copy-feedback {
+            position: absolute;
+            right: 35px;
+            top: 8px;
+            background-color: #238636;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        .copy-feedback.show {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .endpoint-info {
@@ -239,10 +273,15 @@
             border-bottom: 1px solid #30363d;
             padding: 20px;
             transition: background-color 0.2s;
+            cursor: pointer;
         }
 
         .request-item:hover {
             background-color: #21262d;
+        }
+
+        .request-main {
+            pointer-events: none;
         }
 
         .request-item:last-child {
@@ -602,41 +641,52 @@
             }
 
             requestsList.innerHTML = requests.map(request => `
-                <div class="request-item">
-                    <div class="request-header">
-                        <div>
-                            <span class="request-method method-${request.method}">${request.method}</span>
-                            <button class="expand-btn" onclick="toggleDetails('${request.id}')">Ver Detalhes</button>
+                <div class="request-item" onclick="toggleDetails('${request.id}')">
+                    <div class="request-main">
+                        <div class="request-header">
+                            <div>
+                                <span class="request-method method-${request.method}">${request.method}</span>
+                                <span style="margin-left: 10px; color: #8b949e; font-size: 12px;">Clique para ver detalhes</span>
+                            </div>
+                            <div class="request-time">${new Date(request.timestamp).toLocaleString('pt-BR')}</div>
                         </div>
-                        <div class="request-time">${new Date(request.timestamp).toLocaleString('pt-BR')}</div>
+                        <div class="request-url">${request.url}</div>
                     </div>
-                    <div class="request-url">${request.url}</div>
                     <div class="request-details" id="details-${request.id}">
                         <div class="detail-section">
                             <h4>Headers</h4>
-                            <button class="detail-copy-btn" onclick="copyDetailContent('headers-${request.id}')">Copiar</button>
-                            <div class="detail-content" id="headers-${request.id}"></div>
+                            <div class="detail-content" id="headers-${request.id}">
+                                <button class="copy-icon" onclick="copyDetailContent(event, 'headers-${request.id}')" title="Copiar">📋</button>
+                                <div class="copy-feedback" id="feedback-headers-${request.id}">Copiado!</div>
+                            </div>
                         </div>
                         ${request.body ? `
                             <div class="detail-section">
                                 <h4>Body</h4>
-                                <button class="detail-copy-btn" onclick="copyDetailContent('body-${request.id}')">Copiar</button>
-                                <div class="detail-content" id="body-${request.id}"></div>
+                                <div class="detail-content" id="body-${request.id}">
+                                    <button class="copy-icon" onclick="copyDetailContent(event, 'body-${request.id}')" title="Copiar">📋</button>
+                                    <div class="copy-feedback" id="feedback-body-${request.id}">Copiado!</div>
+                                </div>
                             </div>
                         ` : ''}
                         ${Object.keys(request.query).length > 0 ? `
                             <div class="detail-section">
                                 <h4>Query Parameters</h4>
-                                <button class="detail-copy-btn" onclick="copyDetailContent('query-${request.id}')">Copiar</button>
-                                <div class="detail-content" id="query-${request.id}"></div>
+                                <div class="detail-content" id="query-${request.id}">
+                                    <button class="copy-icon" onclick="copyDetailContent(event, 'query-${request.id}')" title="Copiar">📋</button>
+                                    <div class="copy-feedback" id="feedback-query-${request.id}">Copiado!</div>
+                                </div>
                             </div>
                         ` : ''}
                         <div class="detail-section">
                             <h4>Info</h4>
-                            <button class="detail-copy-btn" onclick="copyDetailContent('info-${request.id}')">Copiar</button>
-                            <div class="detail-content" id="info-${request.id}">IP: ${request.ip}
+                            <div class="detail-content" id="info-${request.id}">
+                                <button class="copy-icon" onclick="copyDetailContent(event, 'info-${request.id}')" title="Copiar">📋</button>
+                                <div class="copy-feedback" id="feedback-info-${request.id}">Copiado!</div>
+                                <div style="padding-right: 35px;">IP: ${request.ip}
 ID: ${request.id}
 Endpoint ID: ${request.endpoint_id}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -648,7 +698,11 @@ Endpoint ID: ${request.endpoint_id}</div>
                 const headersElement = document.getElementById(`headers-${request.id}`);
                 if (headersElement) {
                     const headersJson = JSON.stringify(request.headers, null, 2);
+                    const copyIcon = headersElement.querySelector('.copy-icon');
+                    const copyFeedback = headersElement.querySelector('.copy-feedback');
                     headersElement.innerHTML = `<pre><code class="language-json">${hljs.highlight(headersJson, {language: 'json'}).value}</code></pre>`;
+                    headersElement.appendChild(copyIcon);
+                    headersElement.appendChild(copyFeedback);
                 }
 
                 // Body
@@ -656,11 +710,15 @@ Endpoint ID: ${request.endpoint_id}</div>
                     const bodyElement = document.getElementById(`body-${request.id}`);
                     if (bodyElement) {
                         const bodyContent = formatBody(request.body);
+                        const copyIcon = bodyElement.querySelector('.copy-icon');
+                        const copyFeedback = bodyElement.querySelector('.copy-feedback');
                         if (isValidJSON(bodyContent)) {
                             bodyElement.innerHTML = `<pre><code class="language-json">${hljs.highlight(bodyContent, {language: 'json'}).value}</code></pre>`;
                         } else {
-                            bodyElement.textContent = bodyContent;
+                            bodyElement.innerHTML = `<pre><code>${bodyContent}</code></pre>`;
                         }
+                        bodyElement.appendChild(copyIcon);
+                        bodyElement.appendChild(copyFeedback);
                     }
                 }
 
@@ -669,7 +727,11 @@ Endpoint ID: ${request.endpoint_id}</div>
                     const queryElement = document.getElementById(`query-${request.id}`);
                     if (queryElement) {
                         const queryJson = JSON.stringify(request.query, null, 2);
+                        const copyIcon = queryElement.querySelector('.copy-icon');
+                        const copyFeedback = queryElement.querySelector('.copy-feedback');
                         queryElement.innerHTML = `<pre><code class="language-json">${hljs.highlight(queryJson, {language: 'json'}).value}</code></pre>`;
+                        queryElement.appendChild(copyIcon);
+                        queryElement.appendChild(copyFeedback);
                     }
                 }
             });
@@ -718,7 +780,9 @@ Endpoint ID: ${request.endpoint_id}</div>
             });
         }
 
-        function copyDetailContent(elementId) {
+        function copyDetailContent(event, elementId) {
+            event.stopPropagation(); // Prevent triggering the row click
+            
             const element = document.getElementById(elementId);
             let content = element.textContent;
             
@@ -728,15 +792,24 @@ Endpoint ID: ${request.endpoint_id}</div>
                 content = preElement.textContent;
             }
             
+            // Remove the copy icon and feedback text from the content
+            const copyIcon = element.querySelector('.copy-icon');
+            const copyFeedback = element.querySelector('.copy-feedback');
+            if (copyIcon) {
+                content = content.replace('📋', '').replace('Copiado!', '').trim();
+            }
+            
             navigator.clipboard.writeText(content).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Copiado!';
-                btn.style.backgroundColor = '#2ea043';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.backgroundColor = '#238636';
-                }, 2000);
+                // Show feedback
+                const feedbackElement = element.querySelector('.copy-feedback');
+                if (feedbackElement) {
+                    feedbackElement.classList.add('show');
+                    setTimeout(() => {
+                        feedbackElement.classList.remove('show');
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error('Failed to copy:', err);
             });
         }
 
