@@ -548,11 +548,21 @@
         let currentEndpoint = null;
         let requests = [];
         let isConnected = false;
+        let expandedRequests = new Set();
 
         socket.on('connect', () => {
             console.log('Connected to server');
             isConnected = true;
             updateConnectionStatus();
+            
+            // Reconnect to endpoint if we have one saved
+            if (currentEndpoint) {
+                socket.emit('join-endpoint', currentEndpoint.id);
+                // Reload requests after reconnection
+                setTimeout(() => {
+                    loadRequests();
+                }, 1000);
+            }
         });
 
         socket.on('disconnect', () => {
@@ -812,6 +822,14 @@ Endpoint ID: ${request.endpoint_id}</div>
                         queryElement.appendChild(copyFeedback);
                     }
                 }
+
+                // Restore expanded state
+                if (expandedRequests.has(request.id)) {
+                    const details = document.getElementById(`details-${request.id}`);
+                    if (details) {
+                        details.classList.add('show');
+                    }
+                }
             });
         }
 
@@ -835,7 +853,15 @@ Endpoint ID: ${request.endpoint_id}</div>
 
         function toggleDetails(requestId) {
             const details = document.getElementById(`details-${requestId}`);
-            details.classList.toggle('show');
+            const isExpanded = details.classList.contains('show');
+            
+            if (isExpanded) {
+                details.classList.remove('show');
+                expandedRequests.delete(requestId);
+            } else {
+                details.classList.add('show');
+                expandedRequests.add(requestId);
+            }
         }
 
         function updateRequestCount() {
@@ -929,8 +955,10 @@ Endpoint ID: ${request.endpoint_id}</div>
                     const endpointData = JSON.parse(savedEndpoint);
                     currentEndpoint = endpointData;
                     
-                    // Join socket room
-                    socket.emit('join-endpoint', endpointData.id);
+                    // Join socket room (only if connected)
+                    if (isConnected) {
+                        socket.emit('join-endpoint', endpointData.id);
+                    }
                     
                     // Update UI
                     document.getElementById('endpointUrl').textContent = endpointData.url;
