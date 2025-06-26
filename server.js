@@ -6,6 +6,7 @@ const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
 const cron = require('node-cron');
+const compression = require('compression');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,10 +19,24 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 3000;
 
+// Enable gzip compression
+app.use(compression());
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.raw({ type: '*/*', limit: '50mb' }));
+
+// Serve static files with proper MIME types
+app.use(express.static('public', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 const dbPath = process.env.NODE_ENV === 'production' ? './data/webhooks.db' : './webhooks.db';
 const db = new sqlite3.Database(dbPath);
@@ -60,7 +75,14 @@ db.serialize(() => {
   db.run(`CREATE INDEX IF NOT EXISTS idx_endpoints_created_at ON endpoints(created_at)`);
 });
 
-app.use(express.static('public'));
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: Date.now(),
+    version: '1.0.0'
+  });
+});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
