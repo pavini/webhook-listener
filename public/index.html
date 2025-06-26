@@ -228,26 +228,30 @@
         }
 
         .action-btn {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
-            display: flex;
+            font-size: 11px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            vertical-align: middle;
+            pointer-events: auto;
         }
 
         .action-btn.delete {
-            background-color: rgba(218, 54, 51, 0.8);
+            background-color: rgba(218, 54, 51, 0.6);
             color: white;
+            opacity: 0.7;
         }
 
         .action-btn.delete:hover {
             background-color: rgba(248, 81, 73, 0.9);
             transform: scale(1.1);
+            opacity: 1;
         }
 
         .endpoint-info {
@@ -719,14 +723,12 @@
                         <div class="request-header">
                             <div>
                                 <span class="request-method method-${request.method}">${request.method}</span>
+                                <button class="action-btn delete" onclick="deleteRequest(event, '${request.id}')" title="Deletar request" style="margin-left: 10px;">🗑️</button>
                                 <span style="margin-left: 10px; color: #8b949e; font-size: 12px;">Clique para ver detalhes</span>
                             </div>
                             <div class="request-time">${new Date(request.timestamp).toLocaleString('pt-BR')}</div>
                         </div>
                         <div class="request-url">${request.url}</div>
-                        <div class="request-actions">
-                            <button class="action-btn delete" onclick="deleteRequest(event, '${request.id}')" title="Deletar request">🗑️</button>
-                        </div>
                     </div>
                     <div class="request-details" id="details-${request.id}">
                         <div class="detail-section">
