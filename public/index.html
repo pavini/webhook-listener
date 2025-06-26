@@ -487,6 +487,34 @@
         .success-message.show {
             display: block;
         }
+
+        .cleanup-notice {
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            margin-top: 15px;
+            padding: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .notice-icon {
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .notice-content {
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .last-cleanup {
+            color: #8b949e;
+            font-size: 12px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -494,6 +522,13 @@
         <div class="header">
             <h1>🔗 Webhook Listener</h1>
             <p>Capture e monitore webhooks em tempo real - Multi-usuário</p>
+            <div class="cleanup-notice" id="cleanupNotice">
+                <div class="notice-icon">🗑️</div>
+                <div class="notice-content">
+                    <strong>Limpeza automática:</strong> Dados são removidos automaticamente após 60 dias para manter o sistema otimizado.
+                    <div class="last-cleanup" id="lastCleanup"></div>
+                </div>
+            </div>
         </div>
 
         <div class="endpoint-section">
@@ -1048,8 +1083,33 @@ Endpoint ID: ${request.endpoint_id}`;
             }
         }
 
+        // Load cleanup info
+        async function loadCleanupInfo() {
+            try {
+                const response = await fetch('/api/cleanup-info');
+                const data = await response.json();
+                
+                const lastCleanupElement = document.getElementById('lastCleanup');
+                
+                if (data.lastCleanup) {
+                    const cleanupDate = new Date(data.lastCleanup).toLocaleString('pt-BR');
+                    const stats = data.lastCleanupStats;
+                    lastCleanupElement.textContent = `Última limpeza: ${cleanupDate} (${stats.endpointsDeleted} endpoints e ${stats.requestsDeleted} requests removidos)`;
+                } else {
+                    lastCleanupElement.textContent = 'Nenhuma limpeza realizada ainda.';
+                }
+                
+            } catch (error) {
+                console.error('Error loading cleanup info:', error);
+                document.getElementById('lastCleanup').textContent = '';
+            }
+        }
+
         // Load saved endpoint when page loads
-        window.addEventListener('load', loadSavedEndpoint);
+        window.addEventListener('load', () => {
+            loadSavedEndpoint();
+            loadCleanupInfo();
+        });
 
         // Initial connection status
         updateConnectionStatus();

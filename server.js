@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
+const cron = require('node-cron');
 
 const app = express();
 const server = http.createServer(app);
@@ -43,6 +44,14 @@ db.serialize(() => {
     query TEXT,
     ip TEXT,
     FOREIGN KEY (endpoint_id) REFERENCES endpoints (id)
+  )`);
+
+  // Create cleanup log table
+  db.run(`CREATE TABLE IF NOT EXISTS cleanup_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cleanup_date INTEGER,
+    endpoints_deleted INTEGER,
+    requests_deleted INTEGER
   )`);
 });
 
@@ -247,9 +256,99 @@ io.on('connection', (socket) => {
   });
 });
 
+// Database cleanup function
+function cleanupOldData() {
+  const sixtyDaysAgo = Date.now() - (60 * 24 * 60 * 60 * 1000); // 60 days in milliseconds
+  
+  console.log('Starting database cleanup...');
+  
+  // Count what will be deleted
+  db.get('SELECT COUNT(*) as count FROM endpoints WHERE created_at < ?', [sixtyDaysAgo], (err, endpointCount) => {
+    if (err) {
+      console.error('Error counting endpoints for cleanup:', err);
+      return;
+    }
+    
+    db.get('SELECT COUNT(*) as count FROM requests WHERE timestamp < ?', [sixtyDaysAgo], (err, requestCount) => {
+      if (err) {
+        console.error('Error counting requests for cleanup:', err);
+        return;
+      }
+      
+      const endpointsToDelete = endpointCount.count;
+      const requestsToDelete = requestCount.count;
+      
+      console.log(`Will delete ${endpointsToDelete} endpoints and ${requestsToDelete} requests older than 60 days`);
+      
+      if (endpointsToDelete === 0 && requestsToDelete === 0) {
+        console.log('No old data to cleanup');
+        return;
+      }
+      
+      // Delete old requests first
+      db.run('DELETE FROM requests WHERE timestamp < ?', [sixtyDaysAgo], function(err) {
+        if (err) {
+          console.error('Error deleting old requests:', err);
+          return;
+        }
+        
+        // Delete old endpoints
+        db.run('DELETE FROM endpoints WHERE created_at < ?', [sixtyDaysAgo], function(err) {
+          if (err) {
+            console.error('Error deleting old endpoints:', err);
+            return;
+          }
+          
+          // Log the cleanup
+          db.run(
+            'INSERT INTO cleanup_log (cleanup_date, endpoints_deleted, requests_deleted) VALUES (?, ?, ?)',
+            [Date.now(), endpointsToDelete, requestsToDelete],
+            function(err) {
+              if (err) {
+                console.error('Error logging cleanup:', err);
+              } else {
+                console.log(`Cleanup completed: ${endpointsToDelete} endpoints and ${requestsToDelete} requests deleted`);
+              }
+            }
+          );
+        });
+      });
+    });
+  });
+}
+
+// Schedule cleanup to run every day at 3 AM
+cron.schedule('0 3 * * *', () => {
+  console.log('Running scheduled database cleanup...');
+  cleanupOldData();
+});
+
+// Get last cleanup info
+app.get('/api/cleanup-info', (req, res) => {
+  db.get(
+    'SELECT * FROM cleanup_log ORDER BY cleanup_date DESC LIMIT 1',
+    [],
+    (err, row) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      res.json({
+        lastCleanup: row ? row.cleanup_date : null,
+        lastCleanupStats: row ? {
+          endpointsDeleted: row.endpoints_deleted,
+          requestsDeleted: row.requests_deleted
+        } : null
+      });
+    }
+  );
+});
+
 server.listen(PORT, () => {
   console.log(`Webhook listener running on http://localhost:${PORT}`);
   console.log(`Create endpoints at: http://localhost:${PORT}`);
+  console.log('Database cleanup scheduled for 3 AM daily (deletes data older than 60 days)');
 });
 
 process.on('SIGINT', () => {
