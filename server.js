@@ -27,9 +27,22 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.raw({ type: '*/*', limit: '50mb' }));
 
-// Serve static files with proper MIME types
+// Serve static files with proper MIME types and logging
+app.use('/style.css', (req, res, next) => {
+  console.log('Serving style.css...');
+  res.setHeader('Content-Type', 'text/css');
+  next();
+});
+
+app.use('/app.js', (req, res, next) => {
+  console.log('Serving app.js...');
+  res.setHeader('Content-Type', 'application/javascript');
+  next();
+});
+
 app.use(express.static('public', {
   setHeaders: (res, path) => {
+    console.log(`Serving static file: ${path}`);
     if (path.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
     } else if (path.endsWith('.js')) {
@@ -130,6 +143,41 @@ app.get('/api/health', (req, res) => {
     timestamp: Date.now(),
     version: '1.0.0'
   });
+});
+
+// Debug endpoint to check if files exist
+app.get('/api/debug', (req, res) => {
+  const fs = require('fs');
+  const publicPath = path.join(__dirname, 'public');
+  
+  try {
+    const files = fs.readdirSync(publicPath);
+    const fileStats = {};
+    
+    files.forEach(file => {
+      const filePath = path.join(publicPath, file);
+      const stats = fs.statSync(filePath);
+      fileStats[file] = {
+        size: stats.size,
+        modified: stats.mtime
+      };
+    });
+    
+    res.json({
+      publicPath,
+      files,
+      fileStats,
+      __dirname,
+      cwd: process.cwd()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      publicPath,
+      __dirname,
+      cwd: process.cwd()
+    });
+  }
 });
 
 app.get('/', (req, res) => {
