@@ -24,11 +24,20 @@ const debounce = (func, wait) => {
 const formatRelativeTime = (timestamp) => {
     const now = Date.now();
     const diff = now - timestamp;
+    const currentLang = i18n.getCurrentLanguage();
     
-    if (diff < 60000) return 'há poucos segundos';
-    if (diff < 3600000) return `há ${Math.floor(diff / 60000)} min`;
-    if (diff < 86400000) return `há ${Math.floor(diff / 3600000)}h`;
-    return new Date(timestamp).toLocaleString('pt-BR');
+    if (diff < 60000) {
+        return currentLang === 'pt-BR' ? 'há poucos segundos' : 'few seconds ago';
+    }
+    if (diff < 3600000) {
+        const minutes = Math.floor(diff / 60000);
+        return currentLang === 'pt-BR' ? `há ${minutes} min` : `${minutes} min ago`;
+    }
+    if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        return currentLang === 'pt-BR' ? `há ${hours}h` : `${hours}h ago`;
+    }
+    return new Date(timestamp).toLocaleString(currentLang === 'pt-BR' ? 'pt-BR' : 'en-US');
 };
 
 const isValidJSON = (str) => {
@@ -150,8 +159,8 @@ class RequestRenderer {
         if (!state.currentEndpoint) {
             container.innerHTML = `
                 <div class="no-endpoint">
-                    <h3>Nenhum endpoint ativo</h3>
-                    <p>Crie um endpoint acima para começar a receber webhooks</p>
+                    <h3 data-i18n="no-endpoint.title">${i18n.t('no-endpoint.title')}</h3>
+                    <p data-i18n="no-endpoint.description">${i18n.t('no-endpoint.description')}</p>
                 </div>
             `;
             return;
@@ -489,8 +498,9 @@ function updateRequestsList() {
 
 function updateRequestCount() {
     const count = state.requests.length;
+    const requestsText = i18n.t('status.requests');
     document.getElementById('requestCount').textContent = 
-        `${count} request${count !== 1 ? 's' : ''}`;
+        `${count} ${requestsText}`;
 }
 
 function toggleDetails(requestId) {
@@ -559,7 +569,11 @@ function copyDetailContent(event, elementId) {
 async function clearRequests() {
     if (!state.currentEndpoint) return;
     
-    if (confirm('Tem certeza que deseja limpar todas as requisições deste endpoint?')) {
+    const confirmMessage = i18n.getCurrentLanguage() === 'pt-BR' ? 
+        'Tem certeza que deseja limpar todas as requisições deste endpoint?' :
+        'Are you sure you want to clear all requests from this endpoint?';
+    
+    if (confirm(confirmMessage)) {
         try {
             const response = await fetch(`/api/endpoints/${state.currentEndpoint.id}/requests`, { 
                 method: 'DELETE' 
@@ -569,9 +583,11 @@ async function clearRequests() {
                 state.requests = [];
                 updateRequestsList();
                 updateRequestCount();
-                showSuccess('Requests limpos com sucesso!');
+                showSuccess(i18n.t('message.requests.cleared'));
             } else {
-                throw new Error('Erro ao limpar requests');
+                const errorMsg = i18n.getCurrentLanguage() === 'pt-BR' ? 
+                    'Erro ao limpar requests' : 'Error clearing requests';
+                throw new Error(errorMsg);
             }
         } catch (error) {
             showError(error.message);
@@ -602,7 +618,11 @@ function loadSavedEndpoint() {
 }
 
 function clearEndpointAndCreateNew() {
-    if (confirm('Tem certeza que deseja criar um novo endpoint? O endpoint atual será perdido.')) {
+    const confirmMessage = i18n.getCurrentLanguage() === 'pt-BR' ? 
+        'Tem certeza que deseja criar um novo endpoint? O endpoint atual será perdido.' :
+        'Are you sure you want to create a new endpoint? The current endpoint will be lost.';
+    
+    if (confirm(confirmMessage)) {
         localStorage.removeItem('webhookEndpoint');
         
         state.currentEndpoint = null;
@@ -621,7 +641,10 @@ function clearEndpointAndCreateNew() {
         updateConnectionStatus();
         
         document.getElementById('endpointName').value = '';
-        showSuccess('Agora você pode criar um novo endpoint!');
+        const successMsg = i18n.getCurrentLanguage() === 'pt-BR' ? 
+            'Agora você pode criar um novo endpoint!' :
+            'Now you can create a new endpoint!';
+        showSuccess(successMsg);
     }
 }
 
@@ -635,10 +658,14 @@ async function deleteRequest(event, requestId) {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Erro ao deletar request');
+            const errorMsg = i18n.getCurrentLanguage() === 'pt-BR' ? 
+                'Erro ao deletar request' : 'Error deleting request';
+            throw new Error(error.error || errorMsg);
         }
         
-        showSuccess('Request deletado com sucesso!');
+        const successMsg = i18n.getCurrentLanguage() === 'pt-BR' ? 
+            'Request deletado com sucesso!' : 'Request deleted successfully!';
+        showSuccess(successMsg);
         
     } catch (error) {
         showError(error.message);
@@ -651,13 +678,22 @@ async function loadCleanupInfo() {
         const data = await response.json();
         
         const lastCleanupElement = document.getElementById('lastCleanup');
+        const currentLang = i18n.getCurrentLanguage();
         
         if (data.lastCleanup) {
-            const cleanupDate = new Date(data.lastCleanup).toLocaleString('pt-BR');
+            const locale = currentLang === 'pt-BR' ? 'pt-BR' : 'en-US';
+            const cleanupDate = new Date(data.lastCleanup).toLocaleString(locale);
             const stats = data.lastCleanupStats;
-            lastCleanupElement.textContent = `Última limpeza: ${cleanupDate} (${stats.endpointsDeleted} endpoints e ${stats.requestsDeleted} requests removidos)`;
+            
+            if (currentLang === 'pt-BR') {
+                lastCleanupElement.textContent = `Última limpeza: ${cleanupDate} (${stats.endpointsDeleted} endpoints e ${stats.requestsDeleted} requests removidos)`;
+            } else {
+                lastCleanupElement.textContent = `Last cleanup: ${cleanupDate} (${stats.endpointsDeleted} endpoints and ${stats.requestsDeleted} requests removed)`;
+            }
         } else {
-            lastCleanupElement.textContent = 'Nenhuma limpeza realizada ainda.';
+            lastCleanupElement.textContent = currentLang === 'pt-BR' ? 
+                'Nenhuma limpeza realizada ainda.' : 
+                'No cleanup performed yet.';
         }
         
     } catch (error) {
@@ -668,6 +704,9 @@ async function loadCleanupInfo() {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize i18n system
+    i18n.initializeLanguage();
+    
     // Initialize socket connection
     socketManager.connect();
     state.socket = socketManager.socket;
@@ -694,6 +733,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 60000);
 });
 
+// Language change function
+function changeLanguage(language) {
+    i18n.setLanguage(language);
+    
+    // Update dynamic content that might not be caught by data-i18n
+    updateConnectionStatus();
+    updateRequestCount();
+    updateRequestsList();
+    
+    // Update any existing endpoint UI text
+    if (state.currentEndpoint) {
+        updateEndpointUI(state.currentEndpoint);
+    }
+    
+    // Update any visible messages
+    const errorDiv = document.getElementById('errorMessage');
+    const successDiv = document.getElementById('successMessage');
+    if (errorDiv.classList.contains('show')) {
+        errorDiv.classList.remove('show');
+    }
+    if (successDiv.classList.contains('show')) {
+        successDiv.classList.remove('show');
+    }
+}
+
 // Global functions for onclick handlers
 window.createEndpoint = debouncedCreateEndpoint;
 window.toggleDetails = toggleDetails;
@@ -702,3 +766,4 @@ window.copyDetailContent = copyDetailContent;
 window.clearRequests = clearRequests;
 window.clearEndpointAndCreateNew = clearEndpointAndCreateNew;
 window.deleteRequest = deleteRequest;
+window.changeLanguage = changeLanguage;
