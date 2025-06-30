@@ -444,7 +444,7 @@ const debouncedCreateEndpoint = debounce(async () => {
         updateConnectionStatus();
         
         // Refresh the endpoints list
-        loadUserEndpoints();
+        await loadUserEndpoints();
         
     } catch (error) {
         showError(error.message);
@@ -608,7 +608,6 @@ async function loadUserEndpoints() {
 // Render the endpoints list
 function renderEndpointsList(endpoints) {
     const endpointsList = document.getElementById('endpointsList');
-    const currentEndpoint = userManager.getCurrentEndpoint();
     
     if (endpoints.length === 0) {
         endpointsList.innerHTML = `
@@ -621,7 +620,7 @@ function renderEndpointsList(endpoints) {
     }
     
     endpointsList.innerHTML = endpoints.map(endpoint => {
-        const isActive = currentEndpoint && currentEndpoint.id === endpoint.id;
+        const isActive = state.currentEndpoint && state.currentEndpoint.id === endpoint.id;
         const createdDate = new Date(endpoint.created_at).toLocaleDateString(
             i18n.getCurrentLanguage() === 'pt-BR' ? 'pt-BR' : 'en-US'
         );
@@ -654,8 +653,8 @@ async function switchToEndpoint(endpointId) {
         }
         
         // Leave current endpoint room
-        if (state.currentEndpoint) {
-            socketManager.socket.leave(state.currentEndpoint.id);
+        if (state.currentEndpoint && socketManager.socket) {
+            socketManager.socket.emit('leave-endpoint', state.currentEndpoint.id);
         }
         
         // Set new current endpoint
@@ -671,7 +670,7 @@ async function switchToEndpoint(endpointId) {
         updateConnectionStatus();
         
         // Refresh endpoints list to show active state
-        renderEndpointsList(userManager.userEndpoints);
+        await loadUserEndpoints();
         
         showSuccess(`Switched to endpoint: ${endpoint.name}`);
         
@@ -714,7 +713,7 @@ async function deleteEndpoint(endpointId) {
         }
         
         // Refresh endpoints list
-        loadUserEndpoints();
+        await loadUserEndpoints();
         
         showSuccess(`Endpoint "${endpoint.name}" deleted successfully`);
         
