@@ -179,6 +179,8 @@ class RequestRenderer {
         // Only re-render if requests changed
         const newHtml = this.generateRequestsHtml(requests);
         if (newHtml === this.lastRenderedHtml) {
+            // Just update timestamps without full re-render
+            this.updateTimestamps(requests);
             return;
         }
 
@@ -191,7 +193,7 @@ class RequestRenderer {
 
     generateRequestsHtml(requests) {
         return requests.map(request => `
-            <div class="request-item" onclick="toggleDetails('${request.id}')">
+            <div class="request-item" data-request-id="${request.id}" onclick="toggleDetails('${request.id}')">
                 <div class="request-main">
                     <div class="request-header">
                         <div>
@@ -367,6 +369,15 @@ class RequestRenderer {
         if (details) {
             details.classList.add('show');
         }
+    }
+
+    updateTimestamps(requests) {
+        requests.forEach(request => {
+            const timeElement = document.querySelector(`[data-request-id="${request.id}"] .request-time`);
+            if (timeElement) {
+                timeElement.textContent = formatRelativeTime(request.timestamp);
+            }
+        });
     }
 }
 
