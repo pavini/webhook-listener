@@ -10,10 +10,12 @@ A powerful, self-hosted alternative to webhook.site that captures, inspects, and
 
 ## 👀 See It In Action
 
+⚠️ **Demo GIF Missing**: The original demonstration GIF (`ScreeVideo.gif`) was not properly included in the merge process and needs to be restored.
+
 ![Webhook Listener Interface](screenshots/screenshot-1.png)
 ![Language Switching Demo](screenshots/screenshot-2.png)
 
-*Real-time webhook capture with instant multilingual interface, dark theme, and detailed request inspection*
+*Static screenshots showing the interface - animated GIF demonstration pending restoration*
 
 ## 🎯 Why Choose Webhook Listener?
 
