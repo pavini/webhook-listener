@@ -98,6 +98,32 @@ npm run migrate:up
 npm run migrate:status
 ```
 
+### Erro de Permissão (SQLITE_READONLY)
+Se você encontrar o erro `SQLITE_READONLY`, verifique:
+
+1. **Permissões do diretório**:
+   ```bash
+   # Docker/Produção
+   chmod 755 /app/data
+   chown -R webhookuser:nodejs /app/data
+   
+   # Desenvolvimento
+   chmod 755 ./data
+   ```
+
+2. **Volume do Docker**:
+   ```yaml
+   # docker-compose.yml
+   volumes:
+     - ./data:/app/data
+   ```
+
+3. **Verificar se o diretório existe**:
+   ```bash
+   mkdir -p ./data  # desenvolvimento
+   mkdir -p /app/data  # produção
+   ```
+
 ## Boas Práticas
 
 1. ✅ **Sempre teste migrações localmente primeiro**

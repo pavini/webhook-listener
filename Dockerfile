@@ -18,11 +18,14 @@ RUN npm ci --only=production && npm cache clean --force
 COPY . .
 
 # Create directory for SQLite database with proper permissions
-RUN mkdir -p /app/data && chown -R webhookuser:nodejs /app/data
+RUN mkdir -p /app/data && chmod 755 /app/data
 RUN chown -R webhookuser:nodejs /app
 
 # Switch to non-root user
 USER webhookuser
+
+# Verify permissions
+RUN ls -la /app/data
 
 # Expose port
 EXPOSE 3000
