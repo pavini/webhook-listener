@@ -10,10 +10,14 @@ A powerful, self-hosted alternative to webhook.site that captures, inspects, and
 
 ## 👀 See It In Action
 
-![Webhook Listener Interface](screenshots/screenshot-1.png)
-![Language Switching Demo](screenshots/screenshot-2.png)
+![Webhook Listener Demo](screenshots/ScreeVideo.gif)
 
 *Real-time webhook capture with instant multilingual interface, dark theme, and detailed request inspection*
+
+### Additional Screenshots
+
+![Webhook Listener Interface](screenshots/screenshot-1.png)
+![Language Switching Demo](screenshots/screenshot-2.png)
 
 ## 🎯 Why Choose Webhook Listener?
 
