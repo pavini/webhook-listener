@@ -27,15 +27,15 @@ const formatRelativeTime = (timestamp) => {
     const currentLang = i18n.getCurrentLanguage();
     
     if (diff < 60000) {
-        return currentLang === 'pt-BR' ? 'há poucos segundos' : 'few seconds ago';
+        return i18n.t('time.few.seconds');
     }
     if (diff < 3600000) {
         const minutes = Math.floor(diff / 60000);
-        return currentLang === 'pt-BR' ? `há ${minutes} min` : `${minutes} min ago`;
+        return i18n.t('time.minutes', { minutes });
     }
     if (diff < 86400000) {
         const hours = Math.floor(diff / 3600000);
-        return currentLang === 'pt-BR' ? `há ${hours}h` : `${hours}h ago`;
+        return i18n.t('time.hours', { hours });
     }
     return new Date(timestamp).toLocaleString(currentLang === 'pt-BR' ? 'pt-BR' : 'en-US');
 };
@@ -169,8 +169,8 @@ class RequestRenderer {
         if (requests.length === 0) {
             container.innerHTML = `
                 <div class="no-requests">
-                    <h3>Aguardando webhooks...</h3>
-                    <p>Envie uma requisição para a URL do seu endpoint para ver os detalhes aqui</p>
+                    <h3>${i18n.t('no.requests.title')}</h3>
+                    <p>${i18n.t('no.requests.description')}</p>
                 </div>
             `;
             return;
@@ -196,46 +196,46 @@ class RequestRenderer {
                     <div class="request-header">
                         <div>
                             <span class="request-method method-${request.method}">${request.method}</span>
-                            <span style="margin-left: 10px; color: #8b949e; font-size: 12px;">Clique para ver detalhes</span>
+                            <span style="margin-left: 10px; color: #8b949e; font-size: 12px;">${i18n.t('ui.click.details')}</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <div class="request-time">${formatRelativeTime(request.timestamp)}</div>
-                            <button class="action-btn delete" onclick="deleteRequest(event, '${request.id}')" title="Deletar request">🗑️</button>
+                            <button class="action-btn delete" onclick="deleteRequest(event, '${request.id}')" title="${i18n.t('ui.delete.request')}">🗑️</button>
                         </div>
                     </div>
                     <div class="request-url">${request.url}</div>
                 </div>
                 <div class="request-details" id="details-${request.id}">
                     <div class="detail-section">
-                        <h4>Headers</h4>
+                        <h4>${i18n.t('ui.headers')}</h4>
                         <div class="detail-content" id="headers-${request.id}">
-                            <button class="copy-icon" onclick="copyDetailContent(event, 'headers-${request.id}')" title="Copiar">📋</button>
-                            <div class="copy-feedback" id="feedback-headers-${request.id}">Copiado!</div>
+                            <button class="copy-icon" onclick="copyDetailContent(event, 'headers-${request.id}')" title="${i18n.t('ui.copy')}">📋</button>
+                            <div class="copy-feedback" id="feedback-headers-${request.id}">${i18n.t('ui.copied')}</div>
                         </div>
                     </div>
                     ${request.body ? `
                         <div class="detail-section">
-                            <h4>Body</h4>
+                            <h4>${i18n.t('ui.body')}</h4>
                             <div class="detail-content" id="body-${request.id}">
-                                <button class="copy-icon" onclick="copyDetailContent(event, 'body-${request.id}')" title="Copiar">📋</button>
-                                <div class="copy-feedback" id="feedback-body-${request.id}">Copiado!</div>
+                                <button class="copy-icon" onclick="copyDetailContent(event, 'body-${request.id}')" title="${i18n.t('ui.copy')}">📋</button>
+                                <div class="copy-feedback" id="feedback-body-${request.id}">${i18n.t('ui.copied')}</div>
                             </div>
                         </div>
                     ` : ''}
                     ${Object.keys(request.query).length > 0 ? `
                         <div class="detail-section">
-                            <h4>Query Parameters</h4>
+                            <h4>${i18n.t('ui.query.params')}</h4>
                             <div class="detail-content" id="query-${request.id}">
-                                <button class="copy-icon" onclick="copyDetailContent(event, 'query-${request.id}')" title="Copiar">📋</button>
-                                <div class="copy-feedback" id="feedback-query-${request.id}">Copiado!</div>
+                                <button class="copy-icon" onclick="copyDetailContent(event, 'query-${request.id}')" title="${i18n.t('ui.copy')}">📋</button>
+                                <div class="copy-feedback" id="feedback-query-${request.id}">${i18n.t('ui.copied')}</div>
                             </div>
                         </div>
                     ` : ''}
                     <div class="detail-section">
-                        <h4>Info</h4>
+                        <h4>${i18n.t('ui.info')}</h4>
                         <div class="detail-content" id="info-${request.id}">
-                            <button class="copy-icon" onclick="copyDetailContent(event, 'info-${request.id}')" title="Copiar">📋</button>
-                            <div class="copy-feedback" id="feedback-info-${request.id}">Copiado!</div>
+                            <button class="copy-icon" onclick="copyDetailContent(event, 'info-${request.id}')" title="${i18n.t('ui.copy')}">📋</button>
+                            <div class="copy-feedback" id="feedback-info-${request.id}">${i18n.t('ui.copied')}</div>
                         </div>
                     </div>
                 </div>
@@ -381,10 +381,10 @@ function updateConnectionStatus() {
     
     if (state.isConnected) {
         statusDot.classList.remove('disconnected');
-        statusText.textContent = state.currentEndpoint ? 'Monitorando' : 'Conectado';
+        statusText.textContent = state.currentEndpoint ? i18n.t('status.monitoring') : i18n.t('status.connected');
     } else {
         statusDot.classList.add('disconnected');
-        statusText.textContent = 'Desconectado';
+        statusText.textContent = i18n.t('status.disconnected');
     }
 }
 
@@ -409,7 +409,7 @@ function showSuccess(message) {
 function showLoading(elementId, show = true) {
     const element = document.getElementById(elementId);
     if (show) {
-        element.innerHTML = '<span class="loading-spinner"></span> Carregando...';
+        element.innerHTML = `<span class="loading-spinner"></span> ${i18n.t('loading.text')}`;
         element.disabled = true;
     } else {
         element.disabled = false;
@@ -423,7 +423,7 @@ const debouncedCreateEndpoint = debounce(async () => {
     const name = nameInput.value.trim();
     
     if (!name) {
-        showError('Nome do endpoint é obrigatório');
+        showError(i18n.t('message.error.endpoint.empty'));
         return;
     }
     
@@ -449,7 +449,7 @@ const debouncedCreateEndpoint = debounce(async () => {
     } catch (error) {
         showError(error.message);
     } finally {
-        createBtn.textContent = 'Criar Endpoint';
+        createBtn.textContent = i18n.t('endpoint.create.button');
         createBtn.disabled = false;
     }
 }, 300);
@@ -458,8 +458,9 @@ function updateEndpointUI(data) {
     document.getElementById('endpointUrl').textContent = data.url;
     document.getElementById('endpointUrlContainer').classList.add('show');
     document.getElementById('endpointInfo').classList.add('show');
-    document.getElementById('endpointName').textContent = `Endpoint: ${data.name}`;
-    document.getElementById('endpointCreated').textContent = `Criado em: ${new Date(data.created_at).toLocaleString('pt-BR')}`;
+    document.getElementById('endpointName').textContent = i18n.t('ui.endpoint.label', { name: data.name });
+    const createdDate = new Date(data.created_at).toLocaleString(i18n.getCurrentLanguage() === 'pt-BR' ? 'pt-BR' : 'en-US');
+    document.getElementById('endpointCreated').textContent = i18n.t('ui.created.at', { date: createdDate });
     
     document.getElementById('controlsSection').style.display = 'flex';
     document.getElementById('requestsContainer').style.display = 'block';
@@ -519,7 +520,7 @@ function copyEndpointUrl() {
     navigator.clipboard.writeText(url).then(() => {
         const btn = event.target;
         const originalText = btn.textContent;
-        btn.textContent = 'Copiado!';
+        btn.textContent = i18n.t('ui.copied');
         btn.style.backgroundColor = '#2ea043';
         setTimeout(() => {
             btn.textContent = originalText;
@@ -542,7 +543,7 @@ function copyDetailContent(event, elementId) {
     const copyIcon = element.querySelector('.copy-icon');
     const copyFeedback = element.querySelector('.copy-feedback');
     if (copyIcon) {
-        content = content.replace('📋', '').replace('Copiado!', '').trim();
+        content = content.replace('📋', '').replace(i18n.t('ui.copied'), '').trim();
     }
     
     navigator.clipboard.writeText(content).then(() => {
@@ -561,9 +562,7 @@ function copyDetailContent(event, elementId) {
 async function clearRequests() {
     if (!state.currentEndpoint) return;
     
-    const confirmMessage = i18n.getCurrentLanguage() === 'pt-BR' ? 
-        'Tem certeza que deseja limpar todas as requisições deste endpoint?' :
-        'Are you sure you want to clear all requests from this endpoint?';
+    const confirmMessage = i18n.t('confirm.clear.requests');
     
     if (confirm(confirmMessage)) {
         try {
@@ -577,9 +576,7 @@ async function clearRequests() {
                 updateRequestCount();
                 showSuccess(i18n.t('message.requests.cleared'));
             } else {
-                const errorMsg = i18n.getCurrentLanguage() === 'pt-BR' ? 
-                    'Erro ao limpar requests' : 'Error clearing requests';
-                throw new Error(errorMsg);
+                throw new Error(i18n.t('message.error.requests.clear'));
             }
         } catch (error) {
             showError(error.message);
@@ -647,7 +644,7 @@ async function switchToEndpoint(endpointId) {
     try {
         const endpoint = userManager.getEndpoint(endpointId);
         if (!endpoint) {
-            showError('Endpoint not found');
+            showError(i18n.t('message.error.endpoint.not.found'));
             return;
         }
         
@@ -671,7 +668,7 @@ async function switchToEndpoint(endpointId) {
         // Refresh endpoints list to show active state
         await loadUserEndpoints();
         
-        showSuccess(`Switched to endpoint: ${endpoint.name}`);
+        showSuccess(i18n.t('message.endpoint.switched', { name: endpoint.name }));
         
     } catch (error) {
         console.error('Error switching endpoint:', error);
@@ -683,7 +680,7 @@ async function switchToEndpoint(endpointId) {
 async function deleteEndpoint(endpointId) {
     const endpoint = userManager.getEndpoint(endpointId);
     if (!endpoint) {
-        showError('Endpoint not found');
+        showError(i18n.t('message.error.endpoint.not.found'));
         return;
     }
     
@@ -714,7 +711,7 @@ async function deleteEndpoint(endpointId) {
         // Refresh endpoints list
         await loadUserEndpoints();
         
-        showSuccess(`Endpoint "${endpoint.name}" deleted successfully`);
+        showSuccess(i18n.t('message.endpoint.deleted', { name: endpoint.name }));
         
     } catch (error) {
         console.error('Error deleting endpoint:', error);
@@ -740,36 +737,6 @@ function loadSavedEndpoint() {
     }
 }
 
-function clearEndpointAndCreateNew() {
-    const confirmMessage = i18n.getCurrentLanguage() === 'pt-BR' ? 
-        'Tem certeza que deseja criar um novo endpoint? O endpoint atual será perdido.' :
-        'Are you sure you want to create a new endpoint? The current endpoint will be lost.';
-    
-    if (confirm(confirmMessage)) {
-        localStorage.removeItem('webhookEndpoint');
-        
-        state.currentEndpoint = null;
-        state.requests = [];
-        state.expandedRequests.clear();
-        state.highlightedRequests.clear();
-        
-        document.getElementById('endpointUrlContainer').classList.remove('show');
-        document.getElementById('endpointInfo').classList.remove('show');
-        document.getElementById('controlsSection').style.display = 'none';
-        document.getElementById('requestsContainer').style.display = 'none';
-        document.getElementById('newEndpointBtn').style.display = 'none';
-        
-        updateRequestsList();
-        updateRequestCount();
-        updateConnectionStatus();
-        
-        document.getElementById('endpointName').value = '';
-        const successMsg = i18n.getCurrentLanguage() === 'pt-BR' ? 
-            'Agora você pode criar um novo endpoint!' :
-            'Now you can create a new endpoint!';
-        showSuccess(successMsg);
-    }
-}
 
 async function deleteRequest(event, requestId) {
     event.stopPropagation();
@@ -781,14 +748,10 @@ async function deleteRequest(event, requestId) {
         
         if (!response.ok) {
             const error = await response.json();
-            const errorMsg = i18n.getCurrentLanguage() === 'pt-BR' ? 
-                'Erro ao deletar request' : 'Error deleting request';
-            throw new Error(error.error || errorMsg);
+            throw new Error(error.error || i18n.t('message.error.request.delete'));
         }
         
-        const successMsg = i18n.getCurrentLanguage() === 'pt-BR' ? 
-            'Request deletado com sucesso!' : 'Request deleted successfully!';
-        showSuccess(successMsg);
+        showSuccess(i18n.t('message.request.deleted'));
         
     } catch (error) {
         showError(error.message);
@@ -808,15 +771,13 @@ async function loadCleanupInfo() {
             const cleanupDate = new Date(data.lastCleanup).toLocaleString(locale);
             const stats = data.lastCleanupStats;
             
-            if (currentLang === 'pt-BR') {
-                lastCleanupElement.textContent = `Última limpeza: ${cleanupDate} (${stats.endpointsDeleted} endpoints e ${stats.requestsDeleted} requests removidos)`;
-            } else {
-                lastCleanupElement.textContent = `Last cleanup: ${cleanupDate} (${stats.endpointsDeleted} endpoints and ${stats.requestsDeleted} requests removed)`;
-            }
+            lastCleanupElement.textContent = i18n.t('cleanup.last', {
+                date: cleanupDate,
+                endpoints: stats.endpointsDeleted,
+                requests: stats.requestsDeleted
+            });
         } else {
-            lastCleanupElement.textContent = currentLang === 'pt-BR' ? 
-                'Nenhuma limpeza realizada ainda.' : 
-                'No cleanup performed yet.';
+            lastCleanupElement.textContent = i18n.t('cleanup.never');
         }
         
     } catch (error) {
@@ -858,8 +819,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Language change function
-function changeLanguage(language) {
-    i18n.setLanguage(language);
+async function changeLanguage(language) {
+    await i18n.setLanguage(language);
     
     // Update dynamic content that might not be caught by data-i18n
     updateConnectionStatus();
@@ -888,7 +849,6 @@ window.toggleDetails = toggleDetails;
 window.copyEndpointUrl = copyEndpointUrl;
 window.copyDetailContent = copyDetailContent;
 window.clearRequests = clearRequests;
-window.clearEndpointAndCreateNew = clearEndpointAndCreateNew;
 window.deleteRequest = deleteRequest;
 window.changeLanguage = changeLanguage;
 window.loadUserEndpoints = loadUserEndpoints;

@@ -1,0 +1,91 @@
+{
+  "app.title": "Webhook Listener",
+  "app.subtitle": "Capture and monitor webhooks in real-time - Multi-user",
+  
+  "cleanup.notice": "Automatic cleanup:",
+  "cleanup.description": "Data is automatically removed after 60 days to keep the system optimized.",
+  
+  "user.endpoints.title": "My Endpoints",
+  "user.endpoints.empty": "You don't have any endpoints yet",
+  "user.endpoints.empty.description": "Create your first endpoint below",
+  "user.endpoints.switch": "Switch to this endpoint",
+  "user.endpoints.delete": "Delete endpoint",
+  "user.endpoints.confirm.delete": "Are you sure you want to delete this endpoint? All requests will be lost.",
+  "user.endpoints.created": "Created on",
+  "user.endpoints.requests.count": "requests",
+  
+  "endpoint.create.title": "Create New Endpoint",
+  "endpoint.input.placeholder": "Your endpoint name (e.g., my-app-payment)",
+  "endpoint.create.button": "Create Endpoint",
+  "endpoint.copy.button": "Copy",
+  
+  "status.disconnected": "Disconnected",
+  "status.connected": "Connected",
+  "status.requests": "requests",
+  "controls.clear.button": "Clear Requests",
+  
+  "no-endpoint.title": "No active endpoint",
+  "no-endpoint.description": "Create an endpoint above to start receiving webhooks",
+  
+  "request.method": "Method",
+  "request.url": "URL",
+  "request.timestamp": "Timestamp",
+  "request.headers": "Headers",
+  "request.body": "Body",
+  "request.query": "Query Params",
+  "request.ip": "IP",
+  "request.userAgent": "User Agent",
+  
+  "message.endpoint.created": "Endpoint created successfully!",
+  "message.endpoint.copied": "URL copied to clipboard!",
+  "message.requests.cleared": "Requests cleared successfully!",
+  "message.error.endpoint.exists": "This endpoint already exists. Choose another name.",
+  "message.error.endpoint.invalid": "Invalid endpoint name. Use only letters, numbers and hyphens.",
+  "message.error.endpoint.empty": "Endpoint name is required",
+  "message.endpoint.switched": "Switched to endpoint: ${name}",
+  "message.endpoint.deleted": "Endpoint \"${name}\" deleted successfully",
+  "message.request.deleted": "Request deleted successfully!",
+  "message.new.endpoint.success": "Now you can create a new endpoint!",
+  "message.error.endpoint.not.found": "Endpoint not found",
+  "message.error.request.delete": "Error deleting request",
+  "message.error.requests.clear": "Error clearing requests",
+  
+  "time.few.seconds": "few seconds ago",
+  "time.minutes": "${minutes} min ago",
+  "time.hours": "${hours}h ago",
+  
+  "status.monitoring": "Monitoring",
+  
+  "loading.text": "Loading...",
+  
+  "no.requests.title": "Waiting for webhooks...",
+  "no.requests.description": "Send a request to your endpoint URL to see details here",
+  
+  "ui.click.details": "Click to see details",
+  "ui.delete.request": "Delete request",
+  "ui.copy": "Copy",
+  "ui.copied": "Copied!",
+  "ui.headers": "Headers",
+  "ui.body": "Body",
+  "ui.query.params": "Query Parameters",
+  "ui.info": "Info",
+  "ui.endpoint.label": "Endpoint: ${name}",
+  "ui.created.at": "Created on: ${date}",
+  
+  "confirm.clear.requests": "Are you sure you want to clear all requests from this endpoint?",
+  
+  "cleanup.last": "Last cleanup: ${date} (${endpoints} endpoints and ${requests} requests removed)",
+  "cleanup.never": "No cleanup performed yet.",
+  
+  "user.initialized": "User initialized:",
+  "user.parse.error": "Error parsing user data:",
+  "user.endpoints.load.error": "Failed to load user endpoints:",
+  "user.data.cleared": "User data cleared",
+  "user.endpoint.create.error": "Failed to create endpoint",
+  "user.endpoint.delete.error": "Failed to delete endpoint",
+  "user.date.unknown": "Unknown",
+  
+  "language.selector": "Language",
+  "language.portuguese": "Português",
+  "language.english": "English"
+}
