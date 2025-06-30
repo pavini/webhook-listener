@@ -465,7 +465,6 @@ function updateEndpointUI(data) {
     document.getElementById('controlsSection').style.display = 'flex';
     document.getElementById('requestsContainer').style.display = 'block';
     document.getElementById('clearBtn').disabled = false;
-    document.getElementById('newEndpointBtn').style.display = 'inline-block';
 }
 
 async function loadRequests() {
