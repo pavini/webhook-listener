@@ -55,13 +55,27 @@ app.use(express.static('public', {
 // Database setup with migrations
 const fs = require('fs');
 
-// Ensure data directory exists for production
-const dbPath = process.env.NODE_ENV === 'production' ? './data/webhooks.db' : './webhooks.db';
+// Database path logic for different deployment scenarios
+let dbPath;
 if (process.env.NODE_ENV === 'production') {
-  const dataDir = './data';
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+  // Check if there's a direct file mount (like EasyPanel)
+  const directMount = './webhooks.db';
+  const dataMount = './data/webhooks.db';
+  
+  if (fs.existsSync(directMount)) {
+    console.log('Using direct database file mount:', directMount);
+    dbPath = directMount;
+  } else {
+    console.log('Using data directory mount:', dataMount);
+    dbPath = dataMount;
+    // Ensure data directory exists
+    const dataDir = './data';
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
   }
+} else {
+  dbPath = './webhooks.db';
 }
 
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {

@@ -130,12 +130,25 @@ chmod 755 ./data
 chmod 644 ./data/*.db 2>/dev/null || true
 ```
 
-#### 3. **Volume do Docker**:
+#### 3. **Configuração de Volumes**:
+
+**Docker Compose:**
 ```yaml
 # docker-compose.yml
 volumes:
   - ./data:/app/data
 ```
+
+**EasyPanel File Mount:**
+```
+# Opção 1: Mount direto do arquivo (atual)
+Host: ./webhooks.db → Container: /app/webhooks.db
+
+# Opção 2: Mount da pasta (recomendado)  
+Host: ./data → Container: /app/data
+```
+
+**Importante**: O código detecta automaticamente se existe um mount direto (`/app/webhooks.db`) ou um mount de diretório (`/app/data/webhooks.db`) e usa o apropriado.
 
 #### 4. **Solução Drástica (se nada funcionar)**:
 ```bash
