@@ -53,12 +53,50 @@ app.use(express.static('public', {
 }));
 
 // Database setup with migrations
+const fs = require('fs');
+
+// Ensure data directory exists for production
 const dbPath = process.env.NODE_ENV === 'production' ? './data/webhooks.db' : './webhooks.db';
-const db = new sqlite3.Database(dbPath);
+if (process.env.NODE_ENV === 'production') {
+  const dataDir = './data';
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+}
+
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Database connection failed:', err);
+    console.error('Database path:', dbPath);
+    console.error('Current working directory:', process.cwd());
+    process.exit(1);
+  }
+  console.log(`Connected to SQLite database at: ${dbPath}`);
+});
 
 // Initialize database with migrations
 async function initializeDatabase() {
   console.log('Initializing database with migrations...');
+  
+  // Check database file permissions
+  try {
+    const dbDir = path.dirname(dbPath);
+    const stats = fs.statSync(dbDir);
+    console.log(`Database directory permissions: ${stats.mode.toString(8)}`);
+    
+    // Test write permission by creating a test file
+    const testFile = path.join(dbDir, 'test-write.tmp');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    console.log('Database directory write test: OK');
+    
+  } catch (error) {
+    console.error('Database directory permission check failed:', error);
+    console.error('Database path:', dbPath);
+    console.error('Directory:', path.dirname(dbPath));
+    process.exit(1);
+  }
+  
   const migrations = new DatabaseMigrations(db);
   
   try {

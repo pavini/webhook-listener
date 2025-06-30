@@ -72,6 +72,11 @@ class DatabaseMigrations {
         return new Promise((resolve, reject) => {
             this.db.run(sql, params, function(err) {
                 if (err) {
+                    if (err.code === 'SQLITE_READONLY') {
+                        console.error('Database is read-only. Check file permissions and directory access.');
+                        console.error('Database path:', this.filename || 'unknown');
+                        console.error('Working directory:', process.cwd());
+                    }
                     reject(err);
                 } else {
                     resolve({ lastID: this.lastID, changes: this.changes });
