@@ -626,12 +626,11 @@ function renderEndpointsList(endpoints) {
         );
         
         return `
-            <div class="endpoint-item ${isActive ? 'active' : ''}" data-endpoint-id="${endpoint.id}">
+            <div class="endpoint-item ${isActive ? 'active' : ''}" data-endpoint-id="${endpoint.id}" ${!isActive ? `onclick="switchToEndpoint('${endpoint.id}')"` : ''} style="${!isActive ? 'cursor: pointer;' : ''}">
                 <div class="endpoint-item-header">
                     <div class="endpoint-item-name">${endpoint.name}</div>
                     <div class="endpoint-item-actions">
-                        ${!isActive ? `<button class="endpoint-action-btn" onclick="switchToEndpoint('${endpoint.id}')" title="${i18n.t('user.endpoints.switch')}">🔄</button>` : ''}
-                        <button class="endpoint-action-btn delete" onclick="deleteEndpoint('${endpoint.id}')" title="${i18n.t('user.endpoints.delete')}">🗑️</button>
+                        <button class="endpoint-action-btn delete" onclick="event.stopPropagation(); deleteEndpoint('${endpoint.id}')" title="${i18n.t('user.endpoints.delete')}">🗑️</button>
                     </div>
                 </div>
                 <div class="endpoint-item-info">
