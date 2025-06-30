@@ -142,3 +142,6 @@ ecosystem.config.js
 # Docker
 .dockerignore
 docker-compose.override.yml
+
+# Claude IDE
+.claude/
