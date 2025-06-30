@@ -8,7 +8,7 @@ class UserManager {
 
     init() {
         this.currentUser = this.getOrCreateUser();
-        console.log('User initialized:', this.currentUser);
+        console.log(i18n.t('user.initialized'), this.currentUser);
     }
 
     // Get existing user or create new one
@@ -19,7 +19,7 @@ class UserManager {
             try {
                 return JSON.parse(user);
             } catch (error) {
-                console.error('Error parsing user data:', error);
+                console.error(i18n.t('user.parse.error'), error);
                 // If corrupted, create new user
             }
         }
@@ -62,7 +62,7 @@ class UserManager {
                 this.userEndpoints = await response.json();
                 return this.userEndpoints;
             } else {
-                console.error('Failed to load user endpoints:', response.status);
+                console.error(i18n.t('user.endpoints.load.error'), response.status);
                 return [];
             }
         } catch (error) {
@@ -93,7 +93,7 @@ class UserManager {
                 return endpoint;
             } else {
                 const error = await response.json();
-                throw new Error(error.error || 'Failed to create endpoint');
+                throw new Error(error.error || i18n.t('user.endpoint.create.error'));
             }
         } catch (error) {
             console.error('Error creating endpoint:', error);
@@ -122,7 +122,7 @@ class UserManager {
                 return true;
             } else {
                 const error = await response.json();
-                throw new Error(error.error || 'Failed to delete endpoint');
+                throw new Error(error.error || i18n.t('user.endpoint.delete.error'));
             }
         } catch (error) {
             console.error('Error deleting endpoint:', error);
@@ -166,8 +166,8 @@ class UserManager {
     getUserStats() {
         return {
             total_endpoints: this.userEndpoints.length,
-            user_since: this.currentUser ? new Date(this.currentUser.created_at).toLocaleDateString() : 'Unknown',
-            last_access: this.currentUser ? new Date(this.currentUser.last_access).toLocaleDateString() : 'Unknown'
+            user_since: this.currentUser ? new Date(this.currentUser.created_at).toLocaleDateString() : i18n.t('user.date.unknown'),
+            last_access: this.currentUser ? new Date(this.currentUser.last_access).toLocaleDateString() : i18n.t('user.date.unknown')
         };
     }
 
@@ -177,7 +177,7 @@ class UserManager {
         localStorage.removeItem('webhookEndpoint');
         this.currentUser = null;
         this.userEndpoints = [];
-        console.log('User data cleared');
+        console.log(i18n.t('user.data.cleared'));
     }
 }
 
