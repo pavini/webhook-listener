@@ -14,7 +14,8 @@
       "Bash(gh pr view:*)",
       "Bash(ls:*)",
       "Bash(find:*)",
-      "Bash(npm run migrate:status:*)"
+      "Bash(npm run migrate:status:*)",
+      "Bash(gh pr:*)"
     ],
     "deny": []
   }
