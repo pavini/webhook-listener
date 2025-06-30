@@ -5,7 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "migrate": "node migrate.js",
+    "migrate:up": "node migrate.js up",
+    "migrate:status": "node migrate.js status",
+    "migrate:reset": "node migrate.js reset"
   },
   "dependencies": {
     "compression": "^1.8.0",

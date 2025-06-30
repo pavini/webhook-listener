@@ -7,6 +7,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cron = require('node-cron');
 const compression = require('compression');
+const { DatabaseMigrations } = require('./migrations');
 
 const app = express();
 const server = http.createServer(app);
@@ -51,111 +52,32 @@ app.use(express.static('public', {
   }
 }));
 
+// Database setup with migrations
 const dbPath = process.env.NODE_ENV === 'production' ? './data/webhooks.db' : './webhooks.db';
 const db = new sqlite3.Database(dbPath);
 
-db.serialize(() => {
-  // Create endpoints table
-  db.run(`CREATE TABLE IF NOT EXISTS endpoints (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    user_id TEXT,
-    created_at INTEGER
-  )`);
+// Initialize database with migrations
+async function initializeDatabase() {
+  console.log('Initializing database with migrations...');
+  const migrations = new DatabaseMigrations(db);
   
-  // Create requests table with all columns
-  db.run(`CREATE TABLE IF NOT EXISTS requests (
-    id TEXT PRIMARY KEY,
-    endpoint_id TEXT,
-    timestamp INTEGER,
-    method TEXT,
-    url TEXT,
-    headers TEXT,
-    body TEXT,
-    query TEXT,
-    ip TEXT,
-    FOREIGN KEY (endpoint_id) REFERENCES endpoints (id)
-  )`);
-
-  // Check if endpoint_id column exists and add it if not (migration)
-  db.all("PRAGMA table_info(requests)", (err, columns) => {
-    if (err) {
-      console.error('Error checking table schema:', err);
-      return;
-    }
+  try {
+    await migrations.runMigrations();
+    console.log('Database initialization completed successfully!');
     
-    const hasEndpointId = columns.some(col => col.name === 'endpoint_id');
-    if (!hasEndpointId) {
-      console.log('Adding endpoint_id column to requests table...');
-      db.run(`ALTER TABLE requests ADD COLUMN endpoint_id TEXT`, (err) => {
-        if (err) {
-          console.error('Error adding endpoint_id column:', err);
-        } else {
-          console.log('Successfully added endpoint_id column');
-        }
-      });
-    }
-
-    const hasQuery = columns.some(col => col.name === 'query');
-    if (!hasQuery) {
-      console.log('Adding query column to requests table...');
-      db.run(`ALTER TABLE requests ADD COLUMN query TEXT`, (err) => {
-        if (err) {
-          console.error('Error adding query column:', err);
-        } else {
-          console.log('Successfully added query column');
-        }
-      });
-    }
-
-    const hasIp = columns.some(col => col.name === 'ip');
-    if (!hasIp) {
-      console.log('Adding ip column to requests table...');
-      db.run(`ALTER TABLE requests ADD COLUMN ip TEXT`, (err) => {
-        if (err) {
-          console.error('Error adding ip column:', err);
-        } else {
-          console.log('Successfully added ip column');
-        }
-      });
-    }
-  });
-
-  // Check if user_id column exists in endpoints table and add it if not
-  db.all("PRAGMA table_info(endpoints)", (err, columns) => {
-    if (err) {
-      console.error('Error checking endpoints table schema:', err);
-      return;
-    }
-    
-    const hasUserId = columns.some(col => col.name === 'user_id');
-    if (!hasUserId) {
-      console.log('Adding user_id column to endpoints table...');
-      db.run(`ALTER TABLE endpoints ADD COLUMN user_id TEXT`, (err) => {
-        if (err) {
-          console.error('Error adding user_id column:', err);
-        } else {
-          console.log('Successfully added user_id column to endpoints table');
-        }
-      });
-    }
-  });
-
-  // Create cleanup log table
-  db.run(`CREATE TABLE IF NOT EXISTS cleanup_log (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cleanup_date INTEGER,
-    endpoints_deleted INTEGER,
-    requests_deleted INTEGER
-  )`);
-
-  // Create indexes for better performance (will be created after table migrations)
-  setTimeout(() => {
+    // Create indexes for better performance
     db.run(`CREATE INDEX IF NOT EXISTS idx_requests_timestamp ON requests(timestamp)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_requests_endpoint_id ON requests(endpoint_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_endpoints_created_at ON endpoints(created_at)`);
-  }, 1000);
-});
+    
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+    process.exit(1);
+  }
+}
+
+// Initialize database on startup
+initializeDatabase();
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
