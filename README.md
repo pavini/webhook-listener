@@ -4,7 +4,40 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-A modern, real-time webhook capture and monitoring system built with Node.js. Similar to webhook.site but with enhanced features, multilingual support, and a sleek dark theme interface.
+> **The ultimate webhook debugging companion for developers** 🚀
+
+A powerful, self-hosted alternative to webhook.site that captures, inspects, and monitors HTTP requests in real-time. Perfect for API development, webhook debugging, and integration testing.
+
+## 👀 See It In Action
+
+![Webhook Listener Interface](screenshots/screenshot-1.png)
+![Language Switching Demo](screenshots/screenshot-2.png)
+
+*Real-time webhook capture with instant multilingual interface, dark theme, and detailed request inspection*
+
+## 🎯 Why Choose Webhook Listener?
+
+### 🔥 **For Developers Who Need More**
+- **🌐 Global Ready**: Built-in Portuguese and English support with easy language switching
+- **⚡ Lightning Fast**: Real-time updates with Socket.io - no page refreshes needed
+- **🎨 Beautiful UI**: Modern dark theme that's easy on the eyes during long debugging sessions
+- **🔒 Private & Secure**: Self-hosted solution - your webhook data stays under your control
+- **🛠️ Developer Friendly**: Clean API, comprehensive docs, and extensible architecture
+
+### 🚀 **Perfect For**
+- **API Integration Testing** - Debug payment gateways, notification services, and third-party APIs
+- **Webhook Development** - Test your webhook implementations before going live
+- **Team Collaboration** - Share webhook endpoints across your development team
+- **Production Monitoring** - Capture and analyze production webhook traffic
+- **Learning & Teaching** - Understand HTTP requests and webhook patterns
+
+### 💡 **What Makes It Special**
+Unlike other webhook debugging tools, Webhook Listener offers:
+- **Persistent Local Storage** - Your webhook history is saved locally
+- **Multi-Language Support** - Interface adapts to your preferred language
+- **Advanced Filtering** - Find specific requests quickly with powerful search
+- **Request Replay** - Easily copy and replay webhook requests for testing
+- **No Limits** - Capture unlimited webhooks without rate limits or paywall restrictions
 
 ## 🌟 Features
 
