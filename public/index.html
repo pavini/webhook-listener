@@ -9,33 +9,47 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <script src="i18n.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔗 Webhook Listener</h1>
-            <p>Capture e monitore webhooks em tempo real - Multi-usuário</p>
+            <div class="header-top">
+                <div class="header-content">
+                    <h1>🔗 <span data-i18n="app.title">Webhook Listener</span></h1>
+                    <p data-i18n="app.subtitle">Capture e monitore webhooks em tempo real - Multi-usuário</p>
+                </div>
+                <div class="language-selector-container">
+                    <label for="languageSelector" data-i18n="language.selector">Idioma</label>
+                    <select id="languageSelector" onchange="changeLanguage(this.value)">
+                        <option value="pt-BR" data-i18n="language.portuguese">Português</option>
+                        <option value="en" data-i18n="language.english">English</option>
+                    </select>
+                </div>
+            </div>
             <div class="cleanup-notice" id="cleanupNotice">
                 <div class="notice-icon">🗑️</div>
                 <div class="notice-content">
-                    <strong>Limpeza automática:</strong> Dados são removidos automaticamente após 60 dias para manter o sistema otimizado.
+                    <strong data-i18n="cleanup.notice">Limpeza automática:</strong> <span data-i18n="cleanup.description">Dados são removidos automaticamente após 60 dias para manter o sistema otimizado.</span>
                     <div class="last-cleanup" id="lastCleanup"></div>
                 </div>
             </div>
         </div>
 
         <div class="endpoint-section">
-            <h3>Criar Novo Endpoint</h3>
+            <h3 data-i18n="endpoint.create.title">Criar Novo Endpoint</h3>
             <div class="endpoint-form">
                 <input 
                     type="text" 
                     class="endpoint-input" 
                     id="endpointName" 
+                    data-i18n="endpoint.input.placeholder" 
+                    data-i18n-attr="placeholder"
                     placeholder="Nome do seu endpoint (ex: meu-app-payment)"
                     maxlength="50"
                 >
-                <button class="create-btn" id="createBtn" onclick="createEndpoint()">Criar Endpoint</button>
-                <button class="clear-btn" id="newEndpointBtn" onclick="clearEndpointAndCreateNew()" style="display: none;">Novo Endpoint</button>
+                <button class="create-btn" id="createBtn" onclick="createEndpoint()" data-i18n="endpoint.create.button">Criar Endpoint</button>
+                <button class="clear-btn" id="newEndpointBtn" onclick="clearEndpointAndCreateNew()" style="display: none;" data-i18n="endpoint.new.button">Novo Endpoint</button>
             </div>
             
             <div class="error-message" id="errorMessage"></div>
@@ -43,7 +57,7 @@
             
             <div class="endpoint-url" id="endpointUrlContainer">
                 <code id="endpointUrl"></code>
-                <button class="copy-btn" onclick="copyEndpointUrl()">Copiar</button>
+                <button class="copy-btn" onclick="copyEndpointUrl()" data-i18n="endpoint.copy.button">Copiar</button>
             </div>
             
             <div class="endpoint-info" id="endpointInfo">
@@ -55,17 +69,17 @@
         <div class="controls" id="controlsSection" style="display: none;">
             <div class="status">
                 <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Desconectado</span>
+                <span id="statusText" data-i18n="status.disconnected">Desconectado</span>
                 <span class="request-count" id="requestCount">0 requests</span>
             </div>
-            <button class="clear-btn" id="clearBtn" onclick="clearRequests()" disabled>Limpar Requests</button>
+            <button class="clear-btn" id="clearBtn" onclick="clearRequests()" disabled data-i18n="controls.clear.button">Limpar Requests</button>
         </div>
 
         <div class="requests-container" id="requestsContainer" style="display: none;">
             <div id="requestsList">
                 <div class="no-endpoint">
-                    <h3>Nenhum endpoint ativo</h3>
-                    <p>Crie um endpoint acima para começar a receber webhooks</p>
+                    <h3 data-i18n="no-endpoint.title">Nenhum endpoint ativo</h3>
+                    <p data-i18n="no-endpoint.description">Crie um endpoint acima para começar a receber webhooks</p>
                 </div>
             </div>
         </div>
