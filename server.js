@@ -59,6 +59,7 @@ db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS endpoints (
     id TEXT PRIMARY KEY,
     name TEXT,
+    user_id TEXT,
     created_at INTEGER
   )`);
   
@@ -115,6 +116,26 @@ db.serialize(() => {
           console.error('Error adding ip column:', err);
         } else {
           console.log('Successfully added ip column');
+        }
+      });
+    }
+  });
+
+  // Check if user_id column exists in endpoints table and add it if not
+  db.all("PRAGMA table_info(endpoints)", (err, columns) => {
+    if (err) {
+      console.error('Error checking endpoints table schema:', err);
+      return;
+    }
+    
+    const hasUserId = columns.some(col => col.name === 'user_id');
+    if (!hasUserId) {
+      console.log('Adding user_id column to endpoints table...');
+      db.run(`ALTER TABLE endpoints ADD COLUMN user_id TEXT`, (err) => {
+        if (err) {
+          console.error('Error adding user_id column:', err);
+        } else {
+          console.log('Successfully added user_id column to endpoints table');
         }
       });
     }
@@ -186,17 +207,20 @@ app.get('/', (req, res) => {
 
 // Create new endpoint
 app.post('/api/endpoints', (req, res) => {
-  const { name } = req.body;
+  const { name, user_id } = req.body;
   if (!name || name.trim() === '') {
     return res.status(400).json({ error: 'Endpoint name is required' });
+  }
+  if (!user_id || user_id.trim() === '') {
+    return res.status(400).json({ error: 'User ID is required' });
   }
   
   const endpointId = uuidv4();
   const timestamp = Date.now();
   
   db.run(
-    'INSERT INTO endpoints (id, name, created_at) VALUES (?, ?, ?)',
-    [endpointId, name.trim(), timestamp],
+    'INSERT INTO endpoints (id, name, user_id, created_at) VALUES (?, ?, ?, ?)',
+    [endpointId, name.trim(), user_id.trim(), timestamp],
     function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -206,11 +230,38 @@ app.post('/api/endpoints', (req, res) => {
       res.json({
         id: endpointId,
         name: name.trim(),
+        user_id: user_id.trim(),
         created_at: timestamp,
         url: `${req.protocol}://${req.get('host')}/webhook/${endpointId}`
       });
     }
   );
+});
+
+// Get all endpoints for a user
+app.get('/api/users/:userId/endpoints', (req, res) => {
+  const { userId } = req.params;
+  
+  db.all(`
+    SELECT e.*, COUNT(r.id) as request_count
+    FROM endpoints e
+    LEFT JOIN requests r ON e.id = r.endpoint_id
+    WHERE e.user_id = ?
+    GROUP BY e.id
+    ORDER BY e.created_at DESC
+  `, [userId], (err, endpoints) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    const endpointsWithUrls = endpoints.map(endpoint => ({
+      ...endpoint,
+      url: `${req.protocol}://${req.get('host')}/webhook/${endpoint.id}`
+    }));
+    
+    res.json(endpointsWithUrls);
+  });
 });
 
 // Get endpoint info
@@ -231,6 +282,49 @@ app.get('/api/endpoints/:id', (req, res) => {
     res.json({
       ...endpoint,
       url: `${req.protocol}://${req.get('host')}/webhook/${endpoint.id}`
+    });
+  });
+});
+
+// Delete endpoint (and all its requests)
+app.delete('/api/endpoints/:id', (req, res) => {
+  const { id } = req.params;
+  const { user_id } = req.body;
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+  
+  // Verify endpoint belongs to user
+  db.get('SELECT * FROM endpoints WHERE id = ? AND user_id = ?', [id, user_id], (err, endpoint) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    if (!endpoint) {
+      res.status(404).json({ error: 'Endpoint not found or not owned by user' });
+      return;
+    }
+    
+    // Delete all requests for this endpoint first
+    db.run('DELETE FROM requests WHERE endpoint_id = ?', [id], (err) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      // Then delete the endpoint
+      db.run('DELETE FROM endpoints WHERE id = ?', [id], (err) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        
+        // Notify clients that this endpoint is deleted
+        io.to(id).emit('endpoint-deleted');
+        res.json({ message: 'Endpoint and all its requests deleted successfully' });
+      });
     });
   });
 });

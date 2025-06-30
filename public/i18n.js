@@ -12,6 +12,16 @@ class I18n {
                 'cleanup.notice': 'Limpeza automática:',
                 'cleanup.description': 'Dados são removidos automaticamente após 60 dias para manter o sistema otimizado.',
                 
+                // User endpoints section
+                'user.endpoints.title': 'Meus Endpoints',
+                'user.endpoints.empty': 'Você ainda não tem endpoints',
+                'user.endpoints.empty.description': 'Crie seu primeiro endpoint abaixo',
+                'user.endpoints.switch': 'Alternar para este endpoint',
+                'user.endpoints.delete': 'Deletar endpoint',
+                'user.endpoints.confirm.delete': 'Tem certeza que deseja deletar este endpoint? Todos os requests serão perdidos.',
+                'user.endpoints.created': 'Criado em',
+                'user.endpoints.requests.count': 'requests',
+                
                 // Endpoint section
                 'endpoint.create.title': 'Criar Novo Endpoint',
                 'endpoint.input.placeholder': 'Nome do seu endpoint (ex: meu-app-payment)',
@@ -60,6 +70,16 @@ class I18n {
                 // Cleanup notice
                 'cleanup.notice': 'Automatic cleanup:',
                 'cleanup.description': 'Data is automatically removed after 60 days to keep the system optimized.',
+                
+                // User endpoints section
+                'user.endpoints.title': 'My Endpoints',
+                'user.endpoints.empty': 'You don\'t have any endpoints yet',
+                'user.endpoints.empty.description': 'Create your first endpoint below',
+                'user.endpoints.switch': 'Switch to this endpoint',
+                'user.endpoints.delete': 'Delete endpoint',
+                'user.endpoints.confirm.delete': 'Are you sure you want to delete this endpoint? All requests will be lost.',
+                'user.endpoints.created': 'Created on',
+                'user.endpoints.requests.count': 'requests',
                 
                 // Endpoint section
                 'endpoint.create.title': 'Create New Endpoint',
