@@ -430,29 +430,21 @@ const debouncedCreateEndpoint = debounce(async () => {
     showLoading('createBtn');
     
     try {
-        const response = await fetch('/api/endpoints', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ name })
-        });
+        // Use the user manager to create endpoint
+        const endpoint = await userManager.createEndpoint(name);
         
-        const data = await response.json();
+        state.currentEndpoint = endpoint;
+        userManager.setCurrentEndpoint(endpoint);
+        socketManager.emit('join-endpoint', endpoint.id);
         
-        if (!response.ok) {
-            throw new Error(data.error || 'Erro ao criar endpoint');
-        }
-        
-        state.currentEndpoint = data;
-        localStorage.setItem('webhookEndpoint', JSON.stringify(data));
-        socketManager.emit('join-endpoint', data.id);
-        
-        updateEndpointUI(data);
+        updateEndpointUI(endpoint);
         loadRequests();
         nameInput.value = '';
-        showSuccess('Endpoint criado com sucesso!');
+        showSuccess(i18n.t('message.endpoint.created'));
         updateConnectionStatus();
+        
+        // Refresh the endpoints list
+        loadUserEndpoints();
         
     } catch (error) {
         showError(error.message);
@@ -595,25 +587,158 @@ async function clearRequests() {
     }
 }
 
-function loadSavedEndpoint() {
-    const savedEndpoint = localStorage.getItem('webhookEndpoint');
-    if (savedEndpoint) {
-        try {
-            const endpointData = JSON.parse(savedEndpoint);
-            state.currentEndpoint = endpointData;
-            
-            if (state.isConnected) {
-                socketManager.emit('join-endpoint', endpointData.id);
-            }
-            
-            updateEndpointUI(endpointData);
-            loadRequests();
-            updateConnectionStatus();
-            
-        } catch (error) {
-            console.error('Error loading saved endpoint:', error);
-            localStorage.removeItem('webhookEndpoint');
+// Load user endpoints and display them
+async function loadUserEndpoints() {
+    try {
+        const endpoints = await userManager.loadUserEndpoints();
+        renderEndpointsList(endpoints);
+        
+        // Show the endpoints section if there are endpoints
+        const endpointsSection = document.getElementById('userEndpointsSection');
+        if (endpoints.length > 0) {
+            endpointsSection.style.display = 'block';
+        } else {
+            endpointsSection.style.display = 'none';
         }
+    } catch (error) {
+        console.error('Error loading user endpoints:', error);
+    }
+}
+
+// Render the endpoints list
+function renderEndpointsList(endpoints) {
+    const endpointsList = document.getElementById('endpointsList');
+    const currentEndpoint = userManager.getCurrentEndpoint();
+    
+    if (endpoints.length === 0) {
+        endpointsList.innerHTML = `
+            <div class="endpoints-empty">
+                <h4 data-i18n="user.endpoints.empty">${i18n.t('user.endpoints.empty')}</h4>
+                <p data-i18n="user.endpoints.empty.description">${i18n.t('user.endpoints.empty.description')}</p>
+            </div>
+        `;
+        return;
+    }
+    
+    endpointsList.innerHTML = endpoints.map(endpoint => {
+        const isActive = currentEndpoint && currentEndpoint.id === endpoint.id;
+        const createdDate = new Date(endpoint.created_at).toLocaleDateString(
+            i18n.getCurrentLanguage() === 'pt-BR' ? 'pt-BR' : 'en-US'
+        );
+        
+        return `
+            <div class="endpoint-item ${isActive ? 'active' : ''}" data-endpoint-id="${endpoint.id}">
+                <div class="endpoint-item-header">
+                    <div class="endpoint-item-name">${endpoint.name}</div>
+                    <div class="endpoint-item-actions">
+                        ${!isActive ? `<button class="endpoint-action-btn" onclick="switchToEndpoint('${endpoint.id}')" title="${i18n.t('user.endpoints.switch')}">🔄</button>` : ''}
+                        <button class="endpoint-action-btn delete" onclick="deleteEndpoint('${endpoint.id}')" title="${i18n.t('user.endpoints.delete')}">🗑️</button>
+                    </div>
+                </div>
+                <div class="endpoint-item-info">
+                    <span>${i18n.t('user.endpoints.created')}: ${createdDate}</span>
+                    <span>${endpoint.request_count || 0} ${i18n.t('user.endpoints.requests.count')}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Switch to a different endpoint
+async function switchToEndpoint(endpointId) {
+    try {
+        const endpoint = userManager.getEndpoint(endpointId);
+        if (!endpoint) {
+            showError('Endpoint not found');
+            return;
+        }
+        
+        // Leave current endpoint room
+        if (state.currentEndpoint) {
+            socketManager.socket.leave(state.currentEndpoint.id);
+        }
+        
+        // Set new current endpoint
+        state.currentEndpoint = endpoint;
+        userManager.setCurrentEndpoint(endpoint);
+        
+        // Join new endpoint room
+        socketManager.emit('join-endpoint', endpoint.id);
+        
+        // Update UI
+        updateEndpointUI(endpoint);
+        loadRequests();
+        updateConnectionStatus();
+        
+        // Refresh endpoints list to show active state
+        renderEndpointsList(userManager.userEndpoints);
+        
+        showSuccess(`Switched to endpoint: ${endpoint.name}`);
+        
+    } catch (error) {
+        console.error('Error switching endpoint:', error);
+        showError(error.message);
+    }
+}
+
+// Delete an endpoint
+async function deleteEndpoint(endpointId) {
+    const endpoint = userManager.getEndpoint(endpointId);
+    if (!endpoint) {
+        showError('Endpoint not found');
+        return;
+    }
+    
+    const confirmMessage = i18n.t('user.endpoints.confirm.delete');
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    try {
+        await userManager.deleteEndpoint(endpointId);
+        
+        // If this was the current endpoint, clear it
+        if (state.currentEndpoint && state.currentEndpoint.id === endpointId) {
+            state.currentEndpoint = null;
+            userManager.setCurrentEndpoint(null);
+            state.requests = [];
+            
+            // Hide UI sections
+            document.getElementById('endpointUrlContainer').classList.remove('show');
+            document.getElementById('endpointInfo').classList.remove('show');
+            document.getElementById('controlsSection').style.display = 'none';
+            document.getElementById('requestsContainer').style.display = 'none';
+            
+            updateRequestsList();
+            updateConnectionStatus();
+        }
+        
+        // Refresh endpoints list
+        loadUserEndpoints();
+        
+        showSuccess(`Endpoint "${endpoint.name}" deleted successfully`);
+        
+    } catch (error) {
+        console.error('Error deleting endpoint:', error);
+        showError(error.message);
+    }
+}
+
+function loadSavedEndpoint() {
+    const savedEndpoint = userManager.getCurrentEndpoint();
+    if (savedEndpoint && userManager.ownsEndpoint(savedEndpoint.id)) {
+        state.currentEndpoint = savedEndpoint;
+        
+        if (state.isConnected) {
+            socketManager.emit('join-endpoint', savedEndpoint.id);
+        }
+        
+        updateEndpointUI(savedEndpoint);
+        loadRequests();
+        updateConnectionStatus();
+    } else {
+        // Clear invalid endpoint
+        userManager.setCurrentEndpoint(null);
     }
 }
 
@@ -711,7 +836,8 @@ document.addEventListener('DOMContentLoaded', () => {
     socketManager.connect();
     state.socket = socketManager.socket;
     
-    // Load saved endpoint and cleanup info
+    // Load user endpoints and saved endpoint
+    loadUserEndpoints();
     loadSavedEndpoint();
     loadCleanupInfo();
     
@@ -767,3 +893,7 @@ window.clearRequests = clearRequests;
 window.clearEndpointAndCreateNew = clearEndpointAndCreateNew;
 window.deleteRequest = deleteRequest;
 window.changeLanguage = changeLanguage;
+window.loadUserEndpoints = loadUserEndpoints;
+window.renderEndpointsList = renderEndpointsList;
+window.switchToEndpoint = switchToEndpoint;
+window.deleteEndpoint = deleteEndpoint;

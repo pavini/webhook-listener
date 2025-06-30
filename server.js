@@ -7,6 +7,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cron = require('node-cron');
 const compression = require('compression');
+const { DatabaseMigrations } = require('./migrations');
 
 const app = express();
 const server = http.createServer(app);
@@ -51,90 +52,32 @@ app.use(express.static('public', {
   }
 }));
 
+// Database setup with migrations
 const dbPath = process.env.NODE_ENV === 'production' ? './data/webhooks.db' : './webhooks.db';
 const db = new sqlite3.Database(dbPath);
 
-db.serialize(() => {
-  // Create endpoints table
-  db.run(`CREATE TABLE IF NOT EXISTS endpoints (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    created_at INTEGER
-  )`);
+// Initialize database with migrations
+async function initializeDatabase() {
+  console.log('Initializing database with migrations...');
+  const migrations = new DatabaseMigrations(db);
   
-  // Create requests table with all columns
-  db.run(`CREATE TABLE IF NOT EXISTS requests (
-    id TEXT PRIMARY KEY,
-    endpoint_id TEXT,
-    timestamp INTEGER,
-    method TEXT,
-    url TEXT,
-    headers TEXT,
-    body TEXT,
-    query TEXT,
-    ip TEXT,
-    FOREIGN KEY (endpoint_id) REFERENCES endpoints (id)
-  )`);
-
-  // Check if endpoint_id column exists and add it if not (migration)
-  db.all("PRAGMA table_info(requests)", (err, columns) => {
-    if (err) {
-      console.error('Error checking table schema:', err);
-      return;
-    }
+  try {
+    await migrations.runMigrations();
+    console.log('Database initialization completed successfully!');
     
-    const hasEndpointId = columns.some(col => col.name === 'endpoint_id');
-    if (!hasEndpointId) {
-      console.log('Adding endpoint_id column to requests table...');
-      db.run(`ALTER TABLE requests ADD COLUMN endpoint_id TEXT`, (err) => {
-        if (err) {
-          console.error('Error adding endpoint_id column:', err);
-        } else {
-          console.log('Successfully added endpoint_id column');
-        }
-      });
-    }
-
-    const hasQuery = columns.some(col => col.name === 'query');
-    if (!hasQuery) {
-      console.log('Adding query column to requests table...');
-      db.run(`ALTER TABLE requests ADD COLUMN query TEXT`, (err) => {
-        if (err) {
-          console.error('Error adding query column:', err);
-        } else {
-          console.log('Successfully added query column');
-        }
-      });
-    }
-
-    const hasIp = columns.some(col => col.name === 'ip');
-    if (!hasIp) {
-      console.log('Adding ip column to requests table...');
-      db.run(`ALTER TABLE requests ADD COLUMN ip TEXT`, (err) => {
-        if (err) {
-          console.error('Error adding ip column:', err);
-        } else {
-          console.log('Successfully added ip column');
-        }
-      });
-    }
-  });
-
-  // Create cleanup log table
-  db.run(`CREATE TABLE IF NOT EXISTS cleanup_log (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cleanup_date INTEGER,
-    endpoints_deleted INTEGER,
-    requests_deleted INTEGER
-  )`);
-
-  // Create indexes for better performance (will be created after table migrations)
-  setTimeout(() => {
+    // Create indexes for better performance
     db.run(`CREATE INDEX IF NOT EXISTS idx_requests_timestamp ON requests(timestamp)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_requests_endpoint_id ON requests(endpoint_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_endpoints_created_at ON endpoints(created_at)`);
-  }, 1000);
-});
+    
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+    process.exit(1);
+  }
+}
+
+// Initialize database on startup
+initializeDatabase();
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -186,17 +129,20 @@ app.get('/', (req, res) => {
 
 // Create new endpoint
 app.post('/api/endpoints', (req, res) => {
-  const { name } = req.body;
+  const { name, user_id } = req.body;
   if (!name || name.trim() === '') {
     return res.status(400).json({ error: 'Endpoint name is required' });
+  }
+  if (!user_id || user_id.trim() === '') {
+    return res.status(400).json({ error: 'User ID is required' });
   }
   
   const endpointId = uuidv4();
   const timestamp = Date.now();
   
   db.run(
-    'INSERT INTO endpoints (id, name, created_at) VALUES (?, ?, ?)',
-    [endpointId, name.trim(), timestamp],
+    'INSERT INTO endpoints (id, name, user_id, created_at) VALUES (?, ?, ?, ?)',
+    [endpointId, name.trim(), user_id.trim(), timestamp],
     function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -206,11 +152,38 @@ app.post('/api/endpoints', (req, res) => {
       res.json({
         id: endpointId,
         name: name.trim(),
+        user_id: user_id.trim(),
         created_at: timestamp,
         url: `${req.protocol}://${req.get('host')}/webhook/${endpointId}`
       });
     }
   );
+});
+
+// Get all endpoints for a user
+app.get('/api/users/:userId/endpoints', (req, res) => {
+  const { userId } = req.params;
+  
+  db.all(`
+    SELECT e.*, COUNT(r.id) as request_count
+    FROM endpoints e
+    LEFT JOIN requests r ON e.id = r.endpoint_id
+    WHERE e.user_id = ?
+    GROUP BY e.id
+    ORDER BY e.created_at DESC
+  `, [userId], (err, endpoints) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    const endpointsWithUrls = endpoints.map(endpoint => ({
+      ...endpoint,
+      url: `${req.protocol}://${req.get('host')}/webhook/${endpoint.id}`
+    }));
+    
+    res.json(endpointsWithUrls);
+  });
 });
 
 // Get endpoint info
@@ -231,6 +204,49 @@ app.get('/api/endpoints/:id', (req, res) => {
     res.json({
       ...endpoint,
       url: `${req.protocol}://${req.get('host')}/webhook/${endpoint.id}`
+    });
+  });
+});
+
+// Delete endpoint (and all its requests)
+app.delete('/api/endpoints/:id', (req, res) => {
+  const { id } = req.params;
+  const { user_id } = req.body;
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+  
+  // Verify endpoint belongs to user
+  db.get('SELECT * FROM endpoints WHERE id = ? AND user_id = ?', [id, user_id], (err, endpoint) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    if (!endpoint) {
+      res.status(404).json({ error: 'Endpoint not found or not owned by user' });
+      return;
+    }
+    
+    // Delete all requests for this endpoint first
+    db.run('DELETE FROM requests WHERE endpoint_id = ?', [id], (err) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      // Then delete the endpoint
+      db.run('DELETE FROM endpoints WHERE id = ?', [id], (err) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        
+        // Notify clients that this endpoint is deleted
+        io.to(id).emit('endpoint-deleted');
+        res.json({ message: 'Endpoint and all its requests deleted successfully' });
+      });
     });
   });
 });

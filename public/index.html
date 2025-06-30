@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
     <script src="i18n.js"></script>
+    <script src="user-manager.js"></script>
 </head>
 <body>
     <div class="container">
@@ -33,6 +34,13 @@
                     <strong data-i18n="cleanup.notice">Limpeza automática:</strong> <span data-i18n="cleanup.description">Dados são removidos automaticamente após 60 dias para manter o sistema otimizado.</span>
                     <div class="last-cleanup" id="lastCleanup"></div>
                 </div>
+            </div>
+        </div>
+
+        <div class="user-endpoints-section" id="userEndpointsSection" style="display: none;">
+            <h3 data-i18n="user.endpoints.title">Meus Endpoints</h3>
+            <div class="endpoints-list" id="endpointsList">
+                <!-- Endpoints will be populated here -->
             </div>
         </div>
 
