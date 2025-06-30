@@ -99,30 +99,69 @@ npm run migrate:status
 ```
 
 ### Erro de Permissão (SQLITE_READONLY)
-Se você encontrar o erro `SQLITE_READONLY`, verifique:
+Se você encontrar o erro `SQLITE_READONLY`, siga estes passos:
 
-1. **Permissões do diretório**:
-   ```bash
-   # Docker/Produção
-   chmod 755 /app/data
-   chown -R webhookuser:nodejs /app/data
-   
-   # Desenvolvimento
-   chmod 755 ./data
-   ```
+#### 1. **Correção Rápida (Produção)**:
+```bash
+# Entre no container
+docker exec -it container_name bash
 
-2. **Volume do Docker**:
-   ```yaml
-   # docker-compose.yml
-   volumes:
-     - ./data:/app/data
-   ```
+# Corrija as permissões do arquivo de banco
+chmod 644 /app/data/webhooks.db
+chown webhookuser:nodejs /app/data/webhooks.db
 
-3. **Verificar se o diretório existe**:
-   ```bash
-   mkdir -p ./data  # desenvolvimento
-   mkdir -p /app/data  # produção
-   ```
+# Se isso não funcionar, recrie o arquivo
+mv /app/data/webhooks.db /app/data/webhooks.db.backup
+exit
+
+# Reinicie o container
+docker restart container_name
+```
+
+#### 2. **Permissões do diretório**:
+```bash
+# Docker/Produção
+chmod 755 /app/data
+chmod 644 /app/data/*.db
+chown -R webhookuser:nodejs /app/data
+
+# Desenvolvimento
+chmod 755 ./data
+chmod 644 ./data/*.db 2>/dev/null || true
+```
+
+#### 3. **Configuração de Volumes**:
+
+**Docker Compose:**
+```yaml
+# docker-compose.yml
+volumes:
+  - ./data:/app/data
+```
+
+**EasyPanel File Mount:**
+```
+# Opção 1: Mount direto do arquivo (atual)
+Host: ./webhooks.db → Container: /app/webhooks.db
+
+# Opção 2: Mount da pasta (recomendado)  
+Host: ./data → Container: /app/data
+```
+
+**Importante**: O código detecta automaticamente se existe um mount direto (`/app/webhooks.db`) ou um mount de diretório (`/app/data/webhooks.db`) e usa o apropriado.
+
+#### 4. **Solução Drástica (se nada funcionar)**:
+```bash
+# ATENÇÃO: Isso apagará todos os dados!
+docker exec -it container_name rm -f /app/data/webhooks.db
+docker restart container_name
+```
+
+#### 5. **Verificar logs**:
+O servidor agora detecta automaticamente arquivos read-only e tenta corrigi-los. Verifique os logs para:
+- `Database file permissions: xxxxx`
+- `Database file is read-only, attempting to fix permissions...`
+- `Database file permissions fixed` ou mensagens de erro
 
 ## Boas Práticas
 

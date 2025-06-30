@@ -55,20 +55,42 @@ app.use(express.static('public', {
 // Database setup with migrations
 const fs = require('fs');
 
-// Ensure data directory exists for production
-const dbPath = process.env.NODE_ENV === 'production' ? './data/webhooks.db' : './webhooks.db';
+// Database path logic for different deployment scenarios
+let dbPath;
 if (process.env.NODE_ENV === 'production') {
-  const dataDir = './data';
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+  // Check if there's a direct file mount (like EasyPanel)
+  const directMount = './webhooks.db';
+  const dataMount = './data/webhooks.db';
+  
+  if (fs.existsSync(directMount)) {
+    console.log('Using direct database file mount:', directMount);
+    dbPath = directMount;
+  } else {
+    console.log('Using data directory mount:', dataMount);
+    dbPath = dataMount;
+    // Ensure data directory exists
+    const dataDir = './data';
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
   }
+} else {
+  dbPath = './webhooks.db';
 }
 
-const db = new sqlite3.Database(dbPath, (err) => {
+const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
   if (err) {
     console.error('Database connection failed:', err);
     console.error('Database path:', dbPath);
     console.error('Current working directory:', process.cwd());
+    
+    // If it's a permission error, provide specific guidance
+    if (err.code === 'SQLITE_CANTOPEN') {
+      console.error('This is likely a permission issue. Try:');
+      console.error(`chmod 644 ${dbPath}`);
+      console.error(`chown webhookuser:nodejs ${dbPath}`);
+    }
+    
     process.exit(1);
   }
   console.log(`Connected to SQLite database at: ${dbPath}`);
@@ -78,7 +100,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 async function initializeDatabase() {
   console.log('Initializing database with migrations...');
   
-  // Check database file permissions
+  // Check database file and directory permissions
   try {
     const dbDir = path.dirname(dbPath);
     const stats = fs.statSync(dbDir);
@@ -90,8 +112,43 @@ async function initializeDatabase() {
     fs.unlinkSync(testFile);
     console.log('Database directory write test: OK');
     
+    // Check if database file exists and fix permissions if needed
+    if (fs.existsSync(dbPath)) {
+      const dbStats = fs.statSync(dbPath);
+      console.log(`Database file permissions: ${dbStats.mode.toString(8)}`);
+      
+      // If database file is read-only, try to fix permissions
+      if (!(dbStats.mode & 0o200)) { // Check if write permission is missing
+        console.log('Database file is read-only, attempting to fix permissions...');
+        try {
+          fs.chmodSync(dbPath, 0o644); // rw-r--r--
+          console.log('Database file permissions fixed');
+        } catch (chmodError) {
+          console.error('Failed to fix database file permissions:', chmodError);
+          console.log('Attempting to recreate database file...');
+          try {
+            // Backup the existing file (if possible)
+            const backupPath = `${dbPath}.backup.${Date.now()}`;
+            fs.copyFileSync(dbPath, backupPath);
+            console.log(`Backed up database to: ${backupPath}`);
+            
+            // Remove the problematic file
+            fs.unlinkSync(dbPath);
+            console.log('Removed read-only database file');
+          } catch (recreateError) {
+            console.error('Failed to recreate database file:', recreateError);
+            console.error('Manual intervention required:');
+            console.error(`chmod 644 ${dbPath} && chown webhookuser:nodejs ${dbPath}`);
+            process.exit(1);
+          }
+        }
+      }
+    } else {
+      console.log('Database file does not exist, will be created');
+    }
+    
   } catch (error) {
-    console.error('Database directory permission check failed:', error);
+    console.error('Database permission check failed:', error);
     console.error('Database path:', dbPath);
     console.error('Directory:', path.dirname(dbPath));
     process.exit(1);

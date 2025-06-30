@@ -19,13 +19,18 @@ COPY . .
 
 # Create directory for SQLite database with proper permissions
 RUN mkdir -p /app/data && chmod 755 /app/data
+
+# Fix any existing database file permissions
+RUN find /app -name "*.db" -exec chmod 644 {} \; || true
+
+# Set ownership
 RUN chown -R webhookuser:nodejs /app
 
 # Switch to non-root user
 USER webhookuser
 
 # Verify permissions
-RUN ls -la /app/data
+RUN ls -la /app/data /app/*.db 2>/dev/null || echo "No database files found yet"
 
 # Expose port
 EXPOSE 3000
