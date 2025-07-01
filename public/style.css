@@ -691,21 +691,9 @@ body {
 }
 
 /* Authentication Styles */
-.header-controls {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-}
-
 .auth-section {
     display: flex;
     align-items: center;
-}
-
-.language-selector-section {
-    display: flex;
-    justify-content: flex-start;
-    padding: 8px 15px 0 15px;
 }
 
 .github-login-btn {
@@ -819,17 +807,22 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .header-controls {
-        justify-content: center;
-    }
-    
-    .language-selector-section {
-        justify-content: center;
-        padding: 6px 15px 0 15px;
+    .header-top {
+        flex-direction: column;
+        gap: 10px;
     }
     
     .language-selector-container {
+        order: 2;
         align-items: center;
+    }
+    
+    .header-content {
+        order: 1;
+    }
+    
+    .auth-section {
+        order: 3;
     }
     
     .github-login-btn,
@@ -853,9 +846,5 @@ body {
     
     .user-name {
         display: none;
-    }
-    
-    .language-selector-section {
-        padding: 4px 10px 0 10px;
     }
 }
