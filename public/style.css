@@ -694,7 +694,7 @@ body {
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
 }
 
 .auth-section {
@@ -705,16 +705,17 @@ body {
 .github-login-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    background-color: #238636;
-    color: white;
-    border: none;
-    padding: 8px 16px;
+    gap: 6px;
+    background-color: #21262d;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    padding: 6px 12px;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
+    white-space: nowrap;
 }
 
 /* Ensure button is visible by default */
@@ -733,7 +734,8 @@ body {
 }
 
 .github-login-btn:hover {
-    background-color: #2ea043;
+    background-color: #30363d;
+    border-color: #6e7681;
 }
 
 .github-login-btn svg {
@@ -743,35 +745,40 @@ body {
 .user-info {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 12px;
-    background-color: #161b22;
+    gap: 8px;
+    padding: 4px 8px;
+    background-color: #21262d;
     border: 1px solid #30363d;
     border-radius: 6px;
 }
 
 .user-avatar {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     border: 1px solid #30363d;
 }
 
 .user-name {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
     color: #e6edf3;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .logout-btn {
     background-color: transparent;
     color: #f85149;
-    border: 1px solid #f85149;
-    padding: 4px 8px;
+    border: 1px solid #da3633;
+    padding: 2px 6px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .logout-btn:hover {
@@ -808,15 +815,43 @@ body {
 @media (max-width: 768px) {
     .header-controls {
         flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
+        gap: 8px;
+        align-items: center;
     }
     
     .auth-section {
-        justify-content: center;
+        order: 1;
     }
     
     .language-selector-container {
+        order: 2;
         align-items: center;
+    }
+    
+    .github-login-btn,
+    .user-info {
+        font-size: 11px;
+    }
+    
+    .user-name {
+        max-width: 80px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-controls {
+        gap: 6px;
+    }
+    
+    .github-login-btn span {
+        display: none;
+    }
+    
+    .github-login-btn {
+        padding: 6px 8px;
+    }
+    
+    .user-name {
+        display: none;
     }
 }
