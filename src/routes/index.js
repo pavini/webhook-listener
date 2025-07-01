@@ -7,8 +7,12 @@ const usersRouter = require('./users');
 const webhooksRouter = require('./webhooks');
 const requestsRouter = require('./requests');
 const systemRouter = require('./system');
+const authRouter = require('./auth');
 
 const router = express.Router();
+
+// Authentication routes
+router.use('/auth', authRouter);
 
 // API routes
 router.use('/api/endpoints', endpointsRouter);

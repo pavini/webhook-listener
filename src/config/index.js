@@ -47,6 +47,24 @@ class Config {
             level: process.env.LOG_LEVEL || (this.env === 'production' ? 'info' : 'debug'),
             enableRequestLogging: process.env.ENABLE_REQUEST_LOGGING !== 'false'
         };
+        
+        // Authentication configuration
+        this.auth = {
+            github: {
+                clientId: process.env.GITHUB_CLIENT_ID,
+                clientSecret: process.env.GITHUB_CLIENT_SECRET,
+                callbackURL: `${process.env.BASE_URL || 'http://localhost:3000'}/auth/github/callback`
+            },
+            session: {
+                secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
+                resave: false,
+                saveUninitialized: false,
+                cookie: {
+                    secure: this.env === 'production',
+                    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+                }
+            }
+        };
     }
     
     getDatabasePath() {
@@ -106,6 +124,11 @@ class Config {
             'port',
             'database.path'
         ];
+        
+        // In production, require GitHub OAuth credentials
+        if (this.env === 'production') {
+            required.push('auth.github.clientId', 'auth.github.clientSecret', 'auth.session.secret');
+        }
         
         const missing = [];
         for (const key of required) {

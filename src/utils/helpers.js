@@ -196,6 +196,13 @@ const isValidHttpMethod = (method) => {
     return validMethods.includes(method.toUpperCase());
 };
 
+// Async handler wrapper for Express routes
+const asyncHandler = (fn) => {
+    return (req, res, next) => {
+        Promise.resolve(fn(req, res, next)).catch(next);
+    };
+};
+
 module.exports = {
     debounce,
     throttle,
@@ -212,5 +219,6 @@ module.exports = {
     retry,
     sanitizeString,
     parseContentType,
-    isValidHttpMethod
+    isValidHttpMethod,
+    asyncHandler
 };

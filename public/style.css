@@ -689,3 +689,119 @@ body {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Authentication Styles */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.auth-section {
+    display: flex;
+    align-items: center;
+}
+
+.github-login-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #238636;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.github-login-btn:hover {
+    background-color: #2ea043;
+}
+
+.github-login-btn svg {
+    fill: currentColor;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+}
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid #30363d;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #e6edf3;
+}
+
+.logout-btn {
+    background-color: transparent;
+    color: #f85149;
+    border: 1px solid #f85149;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: #f85149;
+    color: white;
+}
+
+/* Migration notice */
+.migration-notice {
+    background-color: #0d5016;
+    border: 1px solid #238636;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 15px 0;
+    display: none;
+}
+
+.migration-notice.show {
+    display: block;
+}
+
+.migration-notice .notice-title {
+    font-weight: 600;
+    color: #2ea043;
+    margin-bottom: 4px;
+}
+
+.migration-notice .notice-message {
+    color: #e6edf3;
+    font-size: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .header-controls {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .auth-section {
+        justify-content: center;
+    }
+    
+    .language-selector-container {
+        align-items: center;
+    }
+}

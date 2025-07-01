@@ -1,4 +1,7 @@
 // Main entry point for the webhook-listener application
+// Load environment variables
+require('dotenv').config();
+
 const Application = require('./app');
 const config = require('./config');
 const { logger, scheduler } = require('./utils');

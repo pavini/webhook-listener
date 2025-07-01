@@ -3,12 +3,34 @@ class UserManager {
     constructor() {
         this.currentUser = null;
         this.userEndpoints = [];
-        this.init();
+        this.isAuthenticated = false;
+        this.githubUser = null;
     }
 
     init() {
         this.currentUser = this.getOrCreateUser();
         console.log(i18n.t('user.initialized'), this.currentUser);
+        
+        // Listen for auth state changes
+        if (typeof authManager !== 'undefined') {
+            authManager.onAuthStateChanged((isAuthenticated, githubUser) => {
+                this.isAuthenticated = isAuthenticated;
+                this.githubUser = githubUser;
+                this.updateUserContext();
+            });
+        }
+    }
+
+    updateUserContext() {
+        if (this.isAuthenticated && this.githubUser) {
+            // Use GitHub user ID for authenticated users
+            this.currentUser.github_id = this.githubUser.id;
+            this.currentUser.auth_type = 'github';
+        } else {
+            // Keep anonymous user
+            this.currentUser.auth_type = 'anonymous';
+        }
+        this.saveUser(this.currentUser);
     }
 
     // Get existing user or create new one
@@ -47,17 +69,31 @@ class UserManager {
         this.currentUser = user;
     }
 
-    // Get current user ID
+    // Get current user ID (prioritize GitHub user ID if authenticated)
     getUserId() {
+        if (this.isAuthenticated && this.githubUser) {
+            return this.githubUser.id;
+        }
+        return this.currentUser ? this.currentUser.id : null;
+    }
+
+    // Get user ID for API calls (use appropriate ID based on auth state)
+    getApiUserId() {
+        if (this.isAuthenticated && this.githubUser) {
+            return this.githubUser.id;
+        }
         return this.currentUser ? this.currentUser.id : null;
     }
 
     // Load user endpoints from server
     async loadUserEndpoints() {
-        if (!this.currentUser) return [];
+        const userId = this.getApiUserId();
+        if (!userId) return [];
 
         try {
-            const response = await fetch(`/api/users/${this.currentUser.id}/endpoints`);
+            const response = await fetch(`/api/users/${userId}/endpoints`, {
+                credentials: 'include' // Include session cookies for authenticated users
+            });
             if (response.ok) {
                 this.userEndpoints = await response.json();
                 return this.userEndpoints;
@@ -73,7 +109,8 @@ class UserManager {
 
     // Create new endpoint
     async createEndpoint(name) {
-        if (!this.currentUser || !name) return null;
+        const userId = this.getApiUserId();
+        if (!userId || !name) return null;
 
         try {
             const response = await fetch('/api/endpoints', {
@@ -81,9 +118,10 @@ class UserManager {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include', // Include session cookies for authenticated users
                 body: JSON.stringify({
                     name: name,
-                    user_id: this.currentUser.id
+                    user_id: userId
                 })
             });
 

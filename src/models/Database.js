@@ -171,6 +171,11 @@ class Database {
     getInstance() {
         return this.db;
     }
+    
+    // Get database instance (alias for getInstance)
+    getDatabase() {
+        return this.db;
+    }
 }
 
 module.exports = new Database();
