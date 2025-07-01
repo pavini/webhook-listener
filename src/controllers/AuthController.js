@@ -37,6 +37,23 @@ class AuthController {
 
     // Get current user info
     me = asyncHandler(async (req, res) => {
+        // Check for test mode mock user
+        const isTestMode = process.env.GITHUB_CLIENT_ID === 'test_client_id' || 
+                          process.env.GITHUB_CLIENT_SECRET === 'test_client_secret';
+        
+        if (isTestMode && req.session.mockUser) {
+            return res.json({
+                user: {
+                    id: req.session.mockUser.id,
+                    username: req.session.mockUser.username,
+                    display_name: req.session.mockUser.display_name,
+                    avatar_url: req.session.mockUser.avatar_url,
+                    profile_url: req.session.mockUser.profile_url
+                },
+                migrationMessage: req.session.migrationMessage || null
+            });
+        }
+        
         if (!req.user) {
             return res.status(401).json({ error: 'Not authenticated' });
         }
@@ -55,6 +72,16 @@ class AuthController {
 
     // Logout
     logout = asyncHandler(async (req, res) => {
+        const isTestMode = process.env.GITHUB_CLIENT_ID === 'test_client_id' || 
+                          process.env.GITHUB_CLIENT_SECRET === 'test_client_secret';
+        
+        if (isTestMode) {
+            // Clear mock user from session
+            delete req.session.mockUser;
+            delete req.session.migrationMessage;
+            return res.json({ message: 'Logged out successfully (test mode)' });
+        }
+        
         req.logout((err) => {
             if (err) {
                 return res.status(500).json({ error: 'Logout failed' });

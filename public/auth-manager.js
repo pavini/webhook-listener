@@ -54,12 +54,29 @@ class AuthManager {
             
             // Show success message
             this.showMessage('Login successful! Welcome to Hook Debug.', 'success');
+        } else if (authParam === 'test_success') {
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Show test mode success message
+            this.showMessage('Test login successful! (Development mode)', 'success');
+            
+            // Refresh auth status
+            setTimeout(() => {
+                this.checkAuthStatus().then(() => this.updateAuthUI());
+            }, 500);
         } else if (errorParam === 'auth_failed') {
             // Clean up URL
             window.history.replaceState({}, document.title, window.location.pathname);
             
             // Show error message
             this.showMessage('Authentication failed. Please try again.', 'error');
+        } else if (errorParam === 'test_mode') {
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Show test mode info
+            this.showMessage('GitHub OAuth not configured. Please set up your GitHub OAuth credentials for production.', 'error');
         }
     }
 

@@ -5,11 +5,16 @@ const User = require('../models/User');
 function initializePassport(db) {
     const userModel = new User(db);
 
-    // Only configure GitHub strategy if credentials are available
-    if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+    // Only configure GitHub strategy with real credentials
+    const clientID = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    
+    if (clientID && clientSecret && 
+        clientID !== 'test_client_id' && clientSecret !== 'test_client_secret') {
+        
         passport.use(new GitHubStrategy({
-            clientID: process.env.GITHUB_CLIENT_ID,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+            clientID: clientID,
+            clientSecret: clientSecret,
             callbackURL: `${process.env.BASE_URL}/auth/github/callback`
         },
         async (accessToken, refreshToken, profile, done) => {
@@ -21,8 +26,10 @@ function initializePassport(db) {
                 return done(error, null);
             }
         }));
+        
+        console.log('GitHub OAuth configured successfully');
     } else {
-        console.log('GitHub OAuth not configured - running in anonymous-only mode');
+        console.log('GitHub OAuth not configured - running in test mode (routes will handle simulation)');
     }
 
     passport.serializeUser((user, done) => {
