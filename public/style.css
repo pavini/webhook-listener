@@ -717,6 +717,21 @@ body {
     transition: background-color 0.2s;
 }
 
+/* Ensure button is visible by default */
+.auth-section .github-login-btn {
+    display: flex !important;
+}
+
+/* Hide user info by default */
+.auth-section .user-info {
+    display: none !important;
+}
+
+/* Auth visibility control */
+.auth-hidden {
+    display: none !important;
+}
+
 .github-login-btn:hover {
     background-color: #2ea043;
 }

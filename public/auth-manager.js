@@ -88,7 +88,8 @@ class AuthManager {
 
         if (this.isAuthenticated && this.currentUser) {
             // Show user info, hide login button
-            githubLoginBtn.style.display = 'none';
+            githubLoginBtn.classList.add('auth-hidden');
+            userInfo.classList.remove('auth-hidden');
             userInfo.style.display = 'flex';
             
             // Update user info
@@ -97,7 +98,8 @@ class AuthManager {
             userName.textContent = this.currentUser.display_name || this.currentUser.username;
         } else {
             // Show login button, hide user info
-            githubLoginBtn.style.display = 'flex';
+            githubLoginBtn.classList.remove('auth-hidden');
+            userInfo.classList.add('auth-hidden');
             userInfo.style.display = 'none';
         }
 
@@ -221,5 +223,26 @@ function logout() {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    authManager.init();
+    try {
+        authManager.init();
+    } catch (error) {
+        console.error('Auth manager initialization failed:', error);
+        // Fallback: ensure login button is visible
+        const githubLoginBtn = document.getElementById('githubLoginBtn');
+        if (githubLoginBtn) {
+            githubLoginBtn.style.display = 'flex';
+        }
+    }
 });
+
+// Fallback initialization in case DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    // Document still loading, wait for DOMContentLoaded
+} else {
+    // Document already loaded, initialize immediately
+    try {
+        authManager.init();
+    } catch (error) {
+        console.error('Auth manager immediate init failed:', error);
+    }
+}
