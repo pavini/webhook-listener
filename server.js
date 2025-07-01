@@ -183,40 +183,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Debug endpoint to check if files exist
-app.get('/api/debug', (req, res) => {
-  const fs = require('fs');
-  const publicPath = path.join(__dirname, 'public');
-  
-  try {
-    const files = fs.readdirSync(publicPath);
-    const fileStats = {};
-    
-    files.forEach(file => {
-      const filePath = path.join(publicPath, file);
-      const stats = fs.statSync(filePath);
-      fileStats[file] = {
-        size: stats.size,
-        modified: stats.mtime
-      };
-    });
-    
-    res.json({
-      publicPath,
-      files,
-      fileStats,
-      __dirname,
-      cwd: process.cwd()
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error.message,
-      publicPath,
-      __dirname,
-      cwd: process.cwd()
-    });
-  }
-});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
