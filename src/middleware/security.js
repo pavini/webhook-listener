@@ -2,7 +2,7 @@ const rateLimit = require('express-rate-limit');
 
 // Rate limiting for API endpoints
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 5 * 60 * 1000, // 5 minutes
     max: 100, // limit each IP to 100 requests per windowMs
     message: {
         error: 'Too many requests from this IP, please try again later.'
@@ -24,8 +24,8 @@ const webhookLimiter = rateLimit({
 
 // Very strict rate limiting for endpoint creation
 const createEndpointLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // limit each IP to 10 endpoint creations per 15 minutes
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 30, // limit each IP to 10 endpoint creations per 15 minutes
     message: {
         error: 'Too many endpoint creation requests from this IP, please try again later.'
     },
