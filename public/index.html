@@ -68,6 +68,7 @@
     
     <script src="i18n.js"></script>
     <script src="user-manager.js"></script>
+    <script src="auth-manager.js"></script>
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL"></script>
@@ -86,12 +87,31 @@
                 <div class="header-content">
                     <h1><img src="hookdebug-logo.png" alt="Hook Debug - Ferramenta de Teste e Monitoramento de Webhooks" style="height: 40px; vertical-align: middle;"></h1>
                 </div>
-                <div class="language-selector-container">
-                    <label for="languageSelector" data-i18n="language.selector">Idioma</label>
-                    <select id="languageSelector" onchange="changeLanguage(this.value)">
-                        <option value="pt-BR" data-i18n="language.portuguese">🇧🇷 Português</option>
-                        <option value="en" data-i18n="language.english">🇺🇸 English</option>
-                    </select>
+                <div class="header-controls">
+                    <div class="auth-section" id="authSection">
+                        <!-- Login button (shown when not authenticated) -->
+                        <button class="github-login-btn" id="githubLoginBtn" onclick="loginWithGitHub()" style="display: none;">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                            </svg>
+                            <span data-i18n="auth.login">Entrar com GitHub</span>
+                        </button>
+                        
+                        <!-- User info (shown when authenticated) -->
+                        <div class="user-info" id="userInfo" style="display: none;">
+                            <img class="user-avatar" id="userAvatar" src="" alt="User Avatar">
+                            <span class="user-name" id="userName"></span>
+                            <button class="logout-btn" id="logoutBtn" onclick="logout()" data-i18n="auth.logout">Sair</button>
+                        </div>
+                    </div>
+                    
+                    <div class="language-selector-container">
+                        <label for="languageSelector" data-i18n="language.selector">Idioma</label>
+                        <select id="languageSelector" onchange="changeLanguage(this.value)">
+                            <option value="pt-BR" data-i18n="language.portuguese">🇧🇷 Português</option>
+                            <option value="en" data-i18n="language.english">🇺🇸 English</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="cleanup-notice" id="cleanupNotice">

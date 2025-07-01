@@ -4,6 +4,9 @@ const socketIo = require('socket.io');
 const compression = require('compression');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
+const passport = require('passport');
+const SQLiteStore = require('connect-sqlite3')(session);
 
 // Import configuration and utilities
 const config = require('./config');
@@ -11,6 +14,9 @@ const { logger, scheduler } = require('./utils');
 
 // Import models and initialize database
 const { Database } = require('./models');
+
+// Import authentication configuration
+const { initializePassport } = require('./config/passport');
 
 // Import middleware
 const { 
@@ -50,6 +56,9 @@ class Application {
             
             // Setup middleware
             this.setupMiddleware();
+            
+            // Setup authentication
+            this.setupAuthentication();
             
             // Setup WebSocket
             this.setupWebSocket();
@@ -134,6 +143,36 @@ class Application {
         }));
         
         logger.debug('Static file serving configured');
+    }
+    
+    setupAuthentication() {
+        // Configure session store using SQLite
+        const sessionStore = new SQLiteStore({
+            db: 'sessions.db',
+            table: 'sessions',
+            dir: path.dirname(config.database.path)
+        });
+
+        // Session configuration
+        this.app.use(session({
+            store: sessionStore,
+            secret: config.auth.session.secret,
+            resave: config.auth.session.resave,
+            saveUninitialized: config.auth.session.saveUninitialized,
+            cookie: config.auth.session.cookie
+        }));
+
+        // Initialize Passport
+        this.app.use(passport.initialize());
+        this.app.use(passport.session());
+
+        // Configure Passport strategies
+        initializePassport(Database.getDatabase());
+
+        // Make user available in app locals for models
+        this.app.locals.db = Database.getDatabase();
+
+        logger.info('Authentication setup completed');
     }
     
     setupWebSocket() {

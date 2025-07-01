@@ -53,6 +53,26 @@ class DatabaseMigrations {
                         requests_deleted INTEGER
                     );
                 `
+            },
+            {
+                version: 4,
+                name: 'create_users_table',
+                up: `
+                    CREATE TABLE IF NOT EXISTS users (
+                        id TEXT PRIMARY KEY,
+                        github_id INTEGER UNIQUE NOT NULL,
+                        username TEXT NOT NULL,
+                        display_name TEXT,
+                        email TEXT,
+                        avatar_url TEXT,
+                        profile_url TEXT,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    );
+                    
+                    CREATE INDEX IF NOT EXISTS idx_users_github_id ON users(github_id);
+                    CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+                `
             }
         ];
     }
