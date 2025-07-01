@@ -51,6 +51,7 @@ npm run typecheck
   - Any external communications
 - All contributions should appear as natural human work
 - Remove any automated footers or signatures from commits/PRs
+- **NEVER** create Pull Requests automatically - only when explicitly requested by the user
 
 ## Notes
 - The application handles webhook debugging and monitoring
