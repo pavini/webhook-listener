@@ -3,12 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webhook Listener</title>
+    <title>Hook Debug - Ferramenta de Teste e Monitoramento de Webhooks em Tempo Real</title>
+    <meta name="description" content="Hook Debug é a ferramenta completa para testar, capturar e monitorar webhooks em tempo real. Multi-usuário, interface intuitiva e análise detalhada de requisições HTTP.">
+    <meta name="keywords" content="webhook, debug, teste webhook, monitoramento webhook, capturar webhook, ferramenta webhook, teste API, debug HTTP, webhook listener, webhook tester">
+    <meta name="author" content="Hook Debug">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://hookdebug.com">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://hookdebug.com">
+    <meta property="og:title" content="Hook Debug - Ferramenta de Teste e Monitoramento de Webhooks">
+    <meta property="og:description" content="Ferramenta completa para testar, capturar e monitorar webhooks em tempo real. Interface intuitiva e análise detalhada.">
+    <meta property="og:image" content="https://hookdebug.com/hookdebug-logo.png">
+    <meta property="og:site_name" content="Hook Debug">
+    <meta property="og:locale" content="pt_BR">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://hookdebug.com">
+    <meta property="twitter:title" content="Hook Debug - Ferramenta de Teste e Monitoramento de Webhooks">
+    <meta property="twitter:description" content="Ferramenta completa para testar, capturar e monitorar webhooks em tempo real. Interface intuitiva e análise detalhada.">
+    <meta property="twitter:image" content="https://hookdebug.com/hookdebug-logo.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/hookdebug-logo.png">
+    <link rel="apple-touch-icon" href="/hookdebug-logo.png">
+    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Hook Debug",
+      "description": "Ferramenta completa para testar, capturar e monitorar webhooks em tempo real com interface intuitiva e análise detalhada de requisições HTTP.",
+      "url": "https://hookdebug.com",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "BRL"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "Hook Debug"
+      },
+      "featureList": [
+        "Captura de webhooks em tempo real",
+        "Interface multi-usuário",
+        "Análise detalhada de requisições HTTP",
+        "Suporte a múltiplos endpoints",
+        "Visualização de dados JSON",
+        "Limpeza automática de dados"
+      ]
+    }
+    </script>
+    
     <script src="i18n.js"></script>
     <script src="user-manager.js"></script>
     
@@ -27,7 +84,8 @@
         <div class="header">
             <div class="header-top">
                 <div class="header-content">
-                    <h1><img src="hookdebug-logo.png" alt="Hook Debug" style="height: 40px; vertical-align: middle;"></h1>
+                    <h1><img src="hookdebug-logo.png" alt="Hook Debug - Ferramenta de Teste e Monitoramento de Webhooks" style="height: 40px; vertical-align: middle;"> Hook Debug</h1>
+                    <p data-i18n="app.subtitle">Ferramenta completa para testar e monitorar webhooks em tempo real</p>
                 </div>
                 <div class="language-selector-container">
                     <label for="languageSelector" data-i18n="language.selector">Idioma</label>
