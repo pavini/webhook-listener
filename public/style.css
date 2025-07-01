@@ -220,17 +220,20 @@ body {
 }
 
 .create-btn {
-    background-color: #238636;
-    color: white;
+    background-color: #FEB922;
+    color: black;
     border: none;
     border-radius: 4px;
     padding: 8px 15px;
     cursor: pointer;
     font-size: 13px;
+    font-weight: 600;
 }
 
 .create-btn:hover {
-    background-color: #2ea043;
+    background-color: #e6a61e;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(254, 185, 34, 0.3);
 }
 
 .create-btn:disabled {
@@ -263,17 +266,20 @@ body {
     position: absolute;
     right: 10px;
     top: 10px;
-    background-color: #238636;
-    color: white;
+    background-color: #FEB922;
+    color: black;
     border: none;
     border-radius: 4px;
     padding: 5px 10px;
     cursor: pointer;
     font-size: 12px;
+    font-weight: 600;
 }
 
 .copy-btn:hover {
-    background-color: #2ea043;
+    background-color: #e6a61e;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(254, 185, 34, 0.3);
 }
 
 .detail-section {
@@ -290,8 +296,8 @@ body {
     top: 8px;
     width: 20px;
     height: 20px;
-    background-color: rgba(35, 134, 54, 0.8);
-    color: white;
+    background-color: rgba(254, 185, 34, 0.8);
+    color: black;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -306,17 +312,18 @@ body {
 }
 
 .copy-icon:hover {
-    background-color: rgba(46, 160, 67, 0.9);
+    background-color: rgba(254, 185, 34, 0.9);
     opacity: 1;
     transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(254, 185, 34, 0.3);
 }
 
 .copy-feedback {
     position: absolute;
     right: 35px;
     top: 8px;
-    background-color: #238636;
-    color: white;
+    background-color: #FEB922;
+    color: black;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 11px;
@@ -628,12 +635,13 @@ body {
 }
 
 .success-message {
-    background-color: #238636;
-    color: white;
+    background-color: #FEB922;
+    color: black;
     padding: 10px;
     border-radius: 6px;
     margin: 10px 0;
     display: none;
+    font-weight: 600;
 }
 
 .success-message.show {
