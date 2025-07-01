@@ -694,12 +694,18 @@ body {
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 15px;
+    justify-content: flex-end;
 }
 
 .auth-section {
     display: flex;
     align-items: center;
+}
+
+.language-selector-section {
+    display: flex;
+    justify-content: flex-start;
+    padding: 8px 15px 0 15px;
 }
 
 .github-login-btn {
@@ -814,17 +820,15 @@ body {
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .header-controls {
-        flex-direction: column;
-        gap: 8px;
-        align-items: center;
+        justify-content: center;
     }
     
-    .auth-section {
-        order: 1;
+    .language-selector-section {
+        justify-content: center;
+        padding: 6px 15px 0 15px;
     }
     
     .language-selector-container {
-        order: 2;
         align-items: center;
     }
     
@@ -839,10 +843,6 @@ body {
 }
 
 @media (max-width: 480px) {
-    .header-controls {
-        gap: 6px;
-    }
-    
     .github-login-btn span {
         display: none;
     }
@@ -853,5 +853,9 @@ body {
     
     .user-name {
         display: none;
+    }
+    
+    .language-selector-section {
+        padding: 4px 10px 0 10px;
     }
 }

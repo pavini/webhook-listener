@@ -88,14 +88,6 @@
                     <h1><img src="hookdebug-logo.png" alt="Hook Debug - Ferramenta de Teste e Monitoramento de Webhooks" style="height: 40px; vertical-align: middle;"></h1>
                 </div>
                 <div class="header-controls">
-                    <div class="language-selector-container">
-                        <label for="languageSelector" data-i18n="language.selector">Idioma</label>
-                        <select id="languageSelector" onchange="changeLanguage(this.value)">
-                            <option value="pt-BR" data-i18n="language.portuguese">🇧🇷 Português</option>
-                            <option value="en" data-i18n="language.english">🇺🇸 English</option>
-                        </select>
-                    </div>
-                    
                     <div class="auth-section" id="authSection">
                         <!-- Login button (shown when not authenticated) -->
                         <button class="github-login-btn" id="githubLoginBtn" onclick="loginWithGitHub()" style="display: flex;">
@@ -114,13 +106,22 @@
                     </div>
                 </div>
             </div>
-            <div class="cleanup-notice" id="cleanupNotice">
+            <div class="language-selector-section">
+                <div class="language-selector-container">
+                    <label for="languageSelector" data-i18n="language.selector">Idioma</label>
+                    <select id="languageSelector" onchange="changeLanguage(this.value)">
+                        <option value="pt-BR" data-i18n="language.portuguese">🇧🇷 Português</option>
+                        <option value="en" data-i18n="language.english">🇺🇸 English</option>
+                    </select>
+                </div>
+            </div>
+            <!-- <div class="cleanup-notice" id="cleanupNotice">
                 <div class="notice-icon">🗑️</div>
                 <div class="notice-content">
                     <strong data-i18n="cleanup.notice">Limpeza automática:</strong> <span data-i18n="cleanup.description">Dados são removidos automaticamente após 60 dias para manter o sistema otimizado.</span>
                     <div class="last-cleanup" id="lastCleanup"></div>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <div class="user-endpoints-section" id="userEndpointsSection" style="display: none;">
