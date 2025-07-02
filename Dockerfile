@@ -23,6 +23,9 @@ RUN mkdir -p /app/data && chmod 775 /app/data
 # Fix any existing database file permissions
 RUN find /app -name "*.db" -exec chmod 664 {} \; || true
 
+# Set ownership for existing files first
+RUN chown -R webhookuser:nodejs /app
+
 # Create startup script to fix database permissions (as root)
 RUN echo '#!/bin/sh\n\
 # Fix database permissions if file already exists\n\
@@ -39,9 +42,6 @@ chown webhookuser:nodejs /app/data\n\
 # Switch to non-root user and start application\n\
 exec su webhookuser -c "node server.new.js"\n\
 ' > /app/start.sh && chmod +x /app/start.sh
-
-# Set ownership for existing files
-RUN chown -R webhookuser:nodejs /app
 
 # Expose port
 EXPOSE 3000
