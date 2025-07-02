@@ -23,17 +23,25 @@ RUN mkdir -p /app/data && chmod 775 /app/data
 # Fix any existing database file permissions
 RUN find /app -name "*.db" -exec chmod 664 {} \; || true
 
-# Set ownership
+# Create startup script to fix database permissions (as root)
+RUN echo '#!/bin/sh\n\
+# Fix database permissions if file already exists\n\
+if [ -f /app/data/webhooks.db ]; then\n\
+  echo "Fixing existing database file permissions..."\n\
+  chmod 664 /app/data/webhooks.db\n\
+  chown webhookuser:nodejs /app/data/webhooks.db\n\
+fi\n\
+\n\
+# Ensure data directory is writable\n\
+chmod 775 /app/data\n\
+chown webhookuser:nodejs /app/data\n\
+\n\
+# Switch to non-root user and start application\n\
+exec su webhookuser -c "node server.new.js"\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Set ownership for existing files
 RUN chown -R webhookuser:nodejs /app
-
-# Ensure data directory has write permissions for the user
-RUN chmod 775 /app/data
-
-# Switch to non-root user
-USER webhookuser
-
-# Verify permissions
-RUN ls -la /app/data /app/*.db 2>/dev/null || echo "No database files found yet"
 
 # Expose port
 EXPOSE 3000
@@ -42,5 +50,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-# Start the application
-CMD ["node", "server.new.js"]
+# Start the application with permission fix (as root initially)
+CMD ["/app/start.sh"]
