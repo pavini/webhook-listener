@@ -68,33 +68,66 @@ if (process.env.NODE_ENV === 'production') {
   } else {
     console.log('Using data directory mount:', dataMount);
     dbPath = dataMount;
-    // Ensure data directory exists
+    // Ensure data directory exists with proper permissions
     const dataDir = './data';
     if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+      try {
+        fs.mkdirSync(dataDir, { recursive: true, mode: 0o777 });
+        console.log('Created data directory with permissions 777');
+      } catch (mkdirError) {
+        console.warn('Could not create data directory with full permissions:', mkdirError.message);
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+    } else {
+      // Ensure existing directory has proper permissions
+      try {
+        fs.chmodSync(dataDir, 0o777);
+        console.log('Fixed data directory permissions to 777');
+      } catch (chmodError) {
+        console.warn('Could not fix data directory permissions:', chmodError.message);
+      }
     }
   }
 } else {
   dbPath = './webhooks.db';
 }
 
-const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-  if (err) {
-    console.error('Database connection failed:', err);
-    console.error('Database path:', dbPath);
-    console.error('Current working directory:', process.cwd());
-    
-    // If it's a permission error, provide specific guidance
-    if (err.code === 'SQLITE_CANTOPEN') {
-      console.error('This is likely a permission issue. Try:');
-      console.error(`chmod 644 ${dbPath}`);
-      console.error(`chown webhookuser:nodejs ${dbPath}`);
-    }
-    
-    process.exit(1);
-  }
-  console.log(`Connected to SQLite database at: ${dbPath}`);
-});
+// Create database with proper error handling and permission fixes
+let db;
+function createDatabase() {
+  return new Promise((resolve, reject) => {
+    db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+      if (err) {
+        console.error('Database connection failed:', err);
+        console.error('Database path:', dbPath);
+        console.error('Current working directory:', process.cwd());
+        
+        // If it's a permission error, provide specific guidance
+        if (err.code === 'SQLITE_CANTOPEN') {
+          console.error('This is likely a permission issue. Try:');
+          console.error(`chmod 644 ${dbPath}`);
+          console.error(`chown $USER ${dbPath}`);
+          
+          // Try to fix permissions and retry once
+          try {
+            if (fs.existsSync(dbPath)) {
+              fs.chmodSync(dbPath, 0o666); // rw-rw-rw-
+              console.log('Fixed database file permissions, retrying...');
+              return createDatabase().then(resolve).catch(reject); // Retry once
+            }
+          } catch (fixError) {
+            console.error('Failed to fix permissions:', fixError);
+          }
+        }
+        
+        reject(err);
+        return;
+      }
+      console.log(`Connected to SQLite database at: ${dbPath}`);
+      resolve();
+    });
+  });
+}
 
 // Initialize database with migrations
 async function initializeDatabase() {
@@ -121,24 +154,66 @@ async function initializeDatabase() {
       if (!(dbStats.mode & 0o200)) { // Check if write permission is missing
         console.log('Database file is read-only, attempting to fix permissions...');
         try {
-          fs.chmodSync(dbPath, 0o644); // rw-r--r--
-          console.log('Database file permissions fixed');
+          // First try to fix directory permissions
+          const dbDir = path.dirname(dbPath);
+          try {
+            fs.chmodSync(dbDir, 0o777); // rwxrwxrwx
+            console.log('Database directory permissions fixed to 777');
+          } catch (dirError) {
+            console.warn('Could not fix directory permissions:', dirError.message);
+          }
+          
+          // Try more permissive permissions for containers
+          fs.chmodSync(dbPath, 0o666); // rw-rw-rw-
+          console.log('Database file permissions fixed to 666');
+          
+          // Test if we can actually write to the file now
+          const testContent = fs.readFileSync(dbPath);
+          fs.writeFileSync(dbPath, testContent);
+          console.log('Write test successful after permission fix');
+          
         } catch (chmodError) {
           console.error('Failed to fix database file permissions:', chmodError);
           console.log('Attempting to recreate database file...');
+          
           try {
+            // First ensure directory is writable
+            const dbDir = path.dirname(dbPath);
+            try {
+              fs.chmodSync(dbDir, 0o777);
+              console.log('Fixed directory permissions before recreation');
+            } catch (dirError) {
+              console.warn('Could not fix directory permissions:', dirError.message);
+            }
+            
             // Backup the existing file (if possible)
             const backupPath = `${dbPath}.backup.${Date.now()}`;
-            fs.copyFileSync(dbPath, backupPath);
-            console.log(`Backed up database to: ${backupPath}`);
+            try {
+              fs.copyFileSync(dbPath, backupPath);
+              console.log(`Backed up database to: ${backupPath}`);
+            } catch (backupError) {
+              console.warn('Could not backup database:', backupError.message);
+            }
             
             // Remove the problematic file
             fs.unlinkSync(dbPath);
             console.log('Removed read-only database file');
+            
+            // Recreate with proper permissions
+            fs.writeFileSync(dbPath, '', { mode: 0o666 });
+            console.log('Created new database file with proper permissions');
+            
+            // Re-close and recreate database connection since we deleted the file
+            if (db) {
+              db.close();
+            }
+            
           } catch (recreateError) {
             console.error('Failed to recreate database file:', recreateError);
             console.error('Manual intervention required:');
-            console.error(`chmod 644 ${dbPath} && chown webhookuser:nodejs ${dbPath}`);
+            console.error(`Run these commands to fix permissions:`);
+            console.error(`sudo chmod 777 ${path.dirname(dbPath)}`);
+            console.error(`sudo chmod 666 ${dbPath} || sudo rm ${dbPath}`);
             process.exit(1);
           }
         }
@@ -167,12 +242,77 @@ async function initializeDatabase() {
     
   } catch (error) {
     console.error('Database initialization failed:', error);
-    process.exit(1);
+    
+    // If it's a readonly error and we haven't tried fixing permissions yet, retry once
+    if (error.code === 'SQLITE_READONLY') {
+      console.log('Detected SQLITE_READONLY error, attempting to fix and retry...');
+      try {
+        // Force close current connection
+        if (db) {
+          db.close();
+        }
+        
+        // Fix permissions more aggressively
+        const dbDir = path.dirname(dbPath);
+        
+        // Make directory fully accessible
+        try {
+          fs.chmodSync(dbDir, 0o777);
+          console.log('Fixed directory permissions to 777');
+        } catch (dirError) {
+          console.warn('Could not fix directory permissions:', dirError.message);
+        }
+        
+        // If database exists but readonly, try to fix or recreate
+        if (fs.existsSync(dbPath)) {
+          try {
+            fs.chmodSync(dbPath, 0o666);
+            console.log('Fixed database file permissions to 666');
+          } catch (fileError) {
+            console.log('Could not fix file permissions, recreating database...');
+            try {
+              const backupPath = `${dbPath}.backup.${Date.now()}`;
+              fs.copyFileSync(dbPath, backupPath);
+              console.log(`Backed up database to: ${backupPath}`);
+              fs.unlinkSync(dbPath);
+              console.log('Removed readonly database file');
+            } catch (recreateError) {
+              console.error('Could not recreate database file:', recreateError.message);
+            }
+          }
+        }
+        
+        // Recreate database connection and retry
+        await createDatabase();
+        const newMigrations = new DatabaseMigrations(db);
+        await newMigrations.runMigrations();
+        console.log('Database initialization completed successfully after retry!');
+        
+      } catch (retryError) {
+        console.error('Failed to fix database permissions and retry:', retryError);
+        console.error('Manual intervention required. Please run:');
+        console.error(`sudo chmod 777 ${path.dirname(dbPath)}`);
+        console.error(`sudo chmod 666 ${dbPath} || sudo rm ${dbPath}`);
+        process.exit(1);
+      }
+    } else {
+      process.exit(1);
+    }
   }
 }
 
 // Initialize database on startup
-initializeDatabase();
+async function startDatabase() {
+  try {
+    await createDatabase();
+    await initializeDatabase();
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  }
+}
+
+startDatabase();
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
