@@ -90,7 +90,7 @@
   "language.portuguese": "🇧🇷 Português",
   "language.english": "🇺🇸 English",
   
-  "auth.login": "GitHub",
+  "auth.login": "Login with GitHub",
   "auth.logout": "Logout",
   "auth.welcome": "Welcome, ${name}!",
   "auth.migration.success": "Endpoints successfully migrated to your GitHub account!"

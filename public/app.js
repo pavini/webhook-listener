@@ -778,6 +778,12 @@ async function loadCleanupInfo() {
         const data = await response.json();
         
         const lastCleanupElement = document.getElementById('lastCleanup');
+        
+        // Check if the element exists (it's commented out in the HTML)
+        if (!lastCleanupElement) {
+            return;
+        }
+        
         const currentLang = i18n.getCurrentLanguage();
         
         if (data.lastCleanup) {
@@ -796,7 +802,10 @@ async function loadCleanupInfo() {
         
     } catch (error) {
         console.error('Error loading cleanup info:', error);
-        document.getElementById('lastCleanup').textContent = '';
+        const lastCleanupElement = document.getElementById('lastCleanup');
+        if (lastCleanupElement) {
+            lastCleanupElement.textContent = '';
+        }
     }
 }
 

@@ -49,8 +49,14 @@ const securityHeaders = (req, res, next) => {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
     
-    // Basic CSP
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;");
+    // Basic CSP - allow external resources for GitHub, Google Analytics, and highlight.js
+    res.setHeader('Content-Security-Policy', 
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.googletagmanager.com; " +
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+        "img-src 'self' data: https://avatars.githubusercontent.com; " +
+        "connect-src 'self' https://www.google-analytics.com;"
+    );
     
     next();
 };
