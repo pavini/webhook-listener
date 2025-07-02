@@ -614,12 +614,24 @@ async function loadUserEndpoints() {
         const endpoints = await userManager.loadUserEndpoints();
         renderEndpointsList(endpoints);
         
+        // Check if current active endpoint is still available
+        if (state.currentEndpoint) {
+            const currentEndpointExists = endpoints.some(ep => ep.id === state.currentEndpoint.id);
+            if (!currentEndpointExists) {
+                clearActiveEndpoint();
+            }
+        }
+        
         // Show the endpoints section if there are endpoints
         const endpointsSection = document.getElementById('userEndpointsSection');
         if (endpoints.length > 0) {
             endpointsSection.style.display = 'block';
         } else {
             endpointsSection.style.display = 'none';
+            // If no endpoints available, clear any active endpoint
+            if (state.currentEndpoint) {
+                clearActiveEndpoint();
+            }
         }
     } catch (error) {
         console.error('Error loading user endpoints:', error);
@@ -736,18 +748,7 @@ async function deleteEndpoint(endpointId) {
         
         // If this was the current endpoint, clear it
         if (state.currentEndpoint && state.currentEndpoint.id === endpointId) {
-            state.currentEndpoint = null;
-            userManager.setCurrentEndpoint(null);
-            state.requests = [];
-            
-            // Hide UI sections
-            document.getElementById('endpointUrlContainer').classList.remove('show');
-            document.getElementById('endpointInfo').classList.remove('show');
-            document.getElementById('controlsSection').style.display = 'none';
-            document.getElementById('requestsContainer').style.display = 'none';
-            
-            updateRequestsList();
-            updateConnectionStatus();
+            clearActiveEndpoint();
         }
         
         // Refresh endpoints list
@@ -894,6 +895,31 @@ async function changeLanguage(language) {
     }
 }
 
+// Clear current active endpoint from UI
+function clearActiveEndpoint() {
+    if (state.currentEndpoint) {
+        // Leave current endpoint room if connected
+        if (socketManager.socket && state.isConnected) {
+            socketManager.socket.emit('leave-endpoint', state.currentEndpoint.id);
+        }
+        
+        // Clear state
+        state.currentEndpoint = null;
+        userManager.setCurrentEndpoint(null);
+        state.requests = [];
+        
+        // Hide UI sections
+        document.getElementById('endpointUrlContainer').classList.remove('show');
+        document.getElementById('endpointInfo').classList.remove('show');
+        document.getElementById('controlsSection').style.display = 'none';
+        document.getElementById('requestsContainer').style.display = 'none';
+        
+        // Update UI
+        updateRequestsList();
+        updateConnectionStatus();
+    }
+}
+
 // Global functions for onclick handlers
 window.createEndpoint = debouncedCreateEndpoint;
 window.toggleDetails = toggleDetails;
@@ -906,3 +932,4 @@ window.loadUserEndpoints = loadUserEndpoints;
 window.renderEndpointsList = renderEndpointsList;
 window.switchToEndpoint = switchToEndpoint;
 window.deleteEndpoint = deleteEndpoint;
+window.clearActiveEndpoint = clearActiveEndpoint;
