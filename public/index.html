@@ -70,18 +70,15 @@
     <script src="user-manager.js"></script>
     <script src="auth-manager.js"></script>
     
-    <!-- Google tag (gtag.js) - Conditional loading with silent fallback -->
+    <!-- Google tag (gtag.js) -->
     <script>
       // Initialize dataLayer for gtag
       window.dataLayer = window.dataLayer || [];
       function gtag(){
-        if (window.dataLayer) {
-          dataLayer.push(arguments);
-        }
+        dataLayer.push(arguments);
       }
       
-      // Only attempt to load Google Analytics in production environments
-      // and only if the current domain suggests a production environment
+      // Only load Google Analytics in production environments
       const isProd = window.location.hostname === 'hookdebug.com' || 
                      (window.location.hostname !== 'localhost' && 
                       window.location.hostname !== '127.0.0.1' && 
@@ -89,25 +86,15 @@
                       !window.location.hostname.includes('staging'));
       
       if (isProd) {
-        // Test connectivity to Google first
-        fetch('https://www.google.com/favicon.ico', { method: 'HEAD', mode: 'no-cors' })
-          .then(() => {
-            // Google is reachable, load analytics
-            const script = document.createElement('script');
-            script.async = true;
-            script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL';
-            script.onerror = function() {
-              // Silent fallback - no console noise
-            };
-            script.onload = function() {
-              gtag('js', new Date());
-              gtag('config', 'G-EFLN6DVLBL');
-            };
-            document.head.appendChild(script);
-          })
-          .catch(() => {
-            // Google not reachable, skip analytics silently
-          });
+        // Load Google Analytics script
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL';
+        script.onload = function() {
+          gtag('js', new Date());
+          gtag('config', 'G-EFLN6DVLBL');
+        };
+        document.head.appendChild(script);
       }
     </script>
 </head>

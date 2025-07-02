@@ -55,7 +55,7 @@ const securityHeaders = (req, res, next) => {
         "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com; " +
         "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
         "img-src 'self' data: https://avatars.githubusercontent.com; " +
-        "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com;"
+        "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com;"
     );
     
     next();
