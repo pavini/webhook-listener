@@ -37,6 +37,7 @@
   "request.userAgent": "User Agent",
   
   "message.endpoint.created": "Endpoint criado com sucesso!",
+  "message.endpoint.create.failed": "Falha ao criar endpoint. Verifique se você está logado ou tente novamente.",
   "message.endpoint.copied": "URL copiada para a área de transferência!",
   "message.requests.cleared": "Requests limpos com sucesso!",
   "message.error.endpoint.exists": "Este endpoint já existe. Escolha outro nome.",

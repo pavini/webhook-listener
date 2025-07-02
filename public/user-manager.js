@@ -82,6 +82,10 @@ class UserManager {
         if (this.isAuthenticated && this.githubUser) {
             return this.githubUser.id;
         }
+        // Ensure we have a current user, create one if needed
+        if (!this.currentUser) {
+            this.currentUser = this.getOrCreateUser();
+        }
         return this.currentUser ? this.currentUser.id : null;
     }
 
