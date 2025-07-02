@@ -648,9 +648,18 @@ function renderEndpointsList(endpoints) {
         
         // Check if endpoint belongs to anonymous user
         const isAnonymous = endpoint.user_id && endpoint.user_id.startsWith('user_anonymous_');
-        const userBadge = isAnonymous ? 
-            '<span class="endpoint-user-badge anonymous">👤 Anônimo</span>' : 
-            '<span class="endpoint-user-badge github">🔗 GitHub</span>';
+        // Get current user's authentication state to properly determine badge
+        const currentUserIsAuthenticated = userManager.isAuthenticated && userManager.githubUser;
+        const isOwnedByCurrentUser = currentUserIsAuthenticated && endpoint.user_id === userManager.githubUser.id;
+        
+        let userBadge;
+        if (isAnonymous) {
+            userBadge = '<span class="endpoint-user-badge anonymous">👤 Anônimo</span>';
+        } else if (isOwnedByCurrentUser || (!isAnonymous && currentUserIsAuthenticated)) {
+            userBadge = '<span class="endpoint-user-badge github">🔗 GitHub</span>';
+        } else {
+            userBadge = '<span class="endpoint-user-badge anonymous">👤 Anônimo</span>';
+        }
         
         return `
             <div class="endpoint-item ${isActive ? 'active' : ''}" data-endpoint-id="${endpoint.id}" ${!isActive ? `onclick="switchToEndpoint('${endpoint.id}')"` : ''} style="${!isActive ? 'cursor: pointer;' : ''}">
