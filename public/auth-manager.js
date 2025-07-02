@@ -168,6 +168,14 @@ class AuthManager {
             if (response.ok) {
                 this.currentUser = null;
                 this.isAuthenticated = false;
+                
+                // Clear user manager data to ensure clean state
+                if (typeof userManager !== 'undefined') {
+                    userManager.isAuthenticated = false;
+                    userManager.githubUser = null;
+                    userManager.userEndpoints = [];
+                }
+                
                 this.updateAuthUI();
                 this.showMessage('Logged out successfully.', 'success');
                 
