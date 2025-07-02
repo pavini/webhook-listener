@@ -101,11 +101,11 @@ class AuthManager {
         if (this.isAuthenticated && this.currentUser) {
             // Show user info, hide login button
             if (githubLoginBtn) {
-                githubLoginBtn.style.display = 'none';
+                githubLoginBtn.style.setProperty('display', 'none', 'important');
                 githubLoginBtn.classList.add('auth-hidden');
             }
             if (userInfo) {
-                userInfo.style.display = 'flex';
+                userInfo.style.setProperty('display', 'flex', 'important');
                 userInfo.classList.remove('auth-hidden');
             }
             
@@ -120,11 +120,11 @@ class AuthManager {
         } else {
             // Show login button, hide user info
             if (githubLoginBtn) {
-                githubLoginBtn.style.display = 'flex';
+                githubLoginBtn.style.setProperty('display', 'flex', 'important');
                 githubLoginBtn.classList.remove('auth-hidden');
             }
             if (userInfo) {
-                userInfo.style.display = 'none';
+                userInfo.style.setProperty('display', 'none', 'important');
                 userInfo.classList.add('auth-hidden');
             }
         }
