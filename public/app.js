@@ -655,7 +655,7 @@ function renderEndpointsList(endpoints) {
         let userBadge;
         if (isAnonymous) {
             userBadge = '<span class="endpoint-user-badge anonymous">👤 Anônimo</span>';
-        } else if (isOwnedByCurrentUser || (!isAnonymous && currentUserIsAuthenticated)) {
+        } else if (isOwnedByCurrentUser) {
             userBadge = '<span class="endpoint-user-badge github">🔗 GitHub</span>';
         } else {
             userBadge = '<span class="endpoint-user-badge anonymous">👤 Anônimo</span>';
