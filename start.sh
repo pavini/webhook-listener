@@ -12,4 +12,4 @@ chmod 775 /app/data
 chown webhookuser:nodejs /app/data
 
 # Switch to non-root user and start application
-exec su webhookuser -c "node server.new.js"
+exec su-exec webhookuser:nodejs node server.new.js
