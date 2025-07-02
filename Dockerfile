@@ -4,7 +4,8 @@ FROM node:22-alpine
 # Set working directory
 WORKDIR /app
 
-# Add non-root user for security
+# Install su-exec for user switching and add non-root user for security
+RUN apk add --no-cache su-exec
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S webhookuser -u 1001
 
