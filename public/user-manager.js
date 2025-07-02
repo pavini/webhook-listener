@@ -22,23 +22,36 @@ class UserManager {
     }
 
     async updateUserContext() {
+        console.log('updateUserContext called', {
+            isAuthenticated: this.isAuthenticated,
+            githubUser: this.githubUser,
+            currentUser: this.currentUser
+        });
+        
         if (this.isAuthenticated && this.githubUser) {
             const oldUserId = this.currentUser.id;
             const newUserId = this.githubUser.id;
             
+            console.log(`Auth state: oldUserId=${oldUserId}, newUserId=${newUserId}`);
+            
             // Migrate endpoints from anonymous user to GitHub user if needed
             if (oldUserId !== newUserId && oldUserId.startsWith('user_anonymous_')) {
                 console.log(`Migrating endpoints from ${oldUserId} to ${newUserId}`);
-                await this.migrateEndpoints(oldUserId, newUserId);
+                const result = await this.migrateEndpoints(oldUserId, newUserId);
+                console.log('Migration result:', result);
+            } else {
+                console.log('No migration needed - user IDs match or not anonymous');
             }
             
             // Use GitHub user ID for authenticated users
             this.currentUser.github_id = this.githubUser.id;
             this.currentUser.auth_type = 'github';
+            console.log('Updated current user to GitHub type');
         } else {
             // Keep anonymous user
             this.currentUser.auth_type = 'anonymous';
             delete this.currentUser.github_id;
+            console.log('Keeping anonymous user');
         }
         this.saveUser(this.currentUser);
     }
@@ -104,7 +117,7 @@ class UserManager {
     // Migrate endpoints from anonymous user to authenticated user
     async migrateEndpoints(fromUserId, toUserId) {
         try {
-            console.log(`Migrating endpoints from ${fromUserId} to ${toUserId}`);
+            console.log(`Starting migration from ${fromUserId} to ${toUserId}`);
             
             const response = await fetch('/api/endpoints/migrate', {
                 method: 'POST',
@@ -118,12 +131,15 @@ class UserManager {
                 })
             });
 
+            console.log('Migration API response status:', response.status);
+
             if (response.ok) {
                 const result = await response.json();
-                console.log(`Successfully migrated ${result.migrated_count} endpoints`);
+                console.log(`Successfully migrated ${result.migratedCount} endpoints`);
                 return result;
             } else {
-                console.error('Failed to migrate endpoints:', response.status);
+                const errorText = await response.text();
+                console.error('Failed to migrate endpoints:', response.status, errorText);
                 return null;
             }
         } catch (error) {
