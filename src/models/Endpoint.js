@@ -72,6 +72,30 @@ class Endpoint {
         return true;
     }
     
+    // Migrate all endpoints from one user to another
+    static async migrateUserEndpoints(fromUserId, toUserId) {
+        if (!fromUserId || !toUserId) {
+            throw new Error('Both from_user_id and to_user_id are required');
+        }
+        
+        if (fromUserId === toUserId) {
+            throw new Error('Source and destination user IDs cannot be the same');
+        }
+        
+        // Get count of endpoints to migrate
+        const countResult = await database.get('SELECT COUNT(*) as count FROM endpoints WHERE user_id = ?', [fromUserId]);
+        const endpointCount = countResult.count;
+        
+        if (endpointCount === 0) {
+            return 0;
+        }
+        
+        // Update all endpoints from fromUserId to toUserId
+        const result = await database.run('UPDATE endpoints SET user_id = ? WHERE user_id = ?', [toUserId, fromUserId]);
+        
+        return result.changes || 0;
+    }
+    
     // Get endpoint with request count
     async getWithRequestCount() {
         const row = await database.get(`

@@ -114,10 +114,46 @@ const validateUUID = (paramName) => {
     };
 };
 
+// Validation middleware for endpoint migration
+const validateMigration = (req, res, next) => {
+    const { from_user_id, to_user_id } = req.body;
+    
+    const errors = [];
+    
+    // Validate from_user_id
+    if (!from_user_id || typeof from_user_id !== 'string' || from_user_id.trim() === '') {
+        errors.push('from_user_id is required and must be a non-empty string');
+    }
+    
+    // Validate to_user_id
+    if (!to_user_id || typeof to_user_id !== 'string' || to_user_id.trim() === '') {
+        errors.push('to_user_id is required and must be a non-empty string');
+    }
+    
+    // Check if user IDs are the same
+    if (from_user_id && to_user_id && from_user_id.trim() === to_user_id.trim()) {
+        errors.push('from_user_id and to_user_id cannot be the same');
+    }
+    
+    if (errors.length > 0) {
+        return res.status(400).json({
+            error: 'Validation failed',
+            details: errors
+        });
+    }
+    
+    // Sanitize inputs
+    req.body.from_user_id = from_user_id.trim();
+    req.body.to_user_id = to_user_id.trim();
+    
+    next();
+};
+
 module.exports = {
     validateEndpoint,
     validateUserId,
     validatePagination,
     sanitizeBody,
-    validateUUID
+    validateUUID,
+    validateMigration
 };

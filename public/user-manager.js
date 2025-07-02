@@ -21,8 +21,16 @@ class UserManager {
         }
     }
 
-    updateUserContext() {
+    async updateUserContext() {
         if (this.isAuthenticated && this.githubUser) {
+            const oldUserId = this.currentUser.id;
+            const newUserId = this.githubUser.id;
+            
+            // Migrate endpoints from anonymous user to GitHub user if needed
+            if (oldUserId !== newUserId && oldUserId.startsWith('user_anonymous_')) {
+                await this.migrateEndpoints(oldUserId, newUserId);
+            }
+            
             // Use GitHub user ID for authenticated users
             this.currentUser.github_id = this.githubUser.id;
             this.currentUser.auth_type = 'github';
@@ -57,9 +65,11 @@ class UserManager {
         return newUser;
     }
 
-    // Generate unique user ID
+    // Generate persistent anonymous user ID based on browser fingerprint
     generateUserId() {
-        return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const browserFingerprint = navigator.userAgent + navigator.language + screen.width + screen.height;
+        const seed = btoa(browserFingerprint).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+        return 'user_anonymous_' + seed;
     }
 
     // Save user to localStorage
@@ -87,6 +97,37 @@ class UserManager {
             this.currentUser = this.getOrCreateUser();
         }
         return this.currentUser ? this.currentUser.id : null;
+    }
+
+    // Migrate endpoints from anonymous user to authenticated user
+    async migrateEndpoints(fromUserId, toUserId) {
+        try {
+            console.log(`Migrating endpoints from ${fromUserId} to ${toUserId}`);
+            
+            const response = await fetch('/api/endpoints/migrate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    from_user_id: fromUserId,
+                    to_user_id: toUserId
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log(`Successfully migrated ${result.migrated_count} endpoints`);
+                return result;
+            } else {
+                console.error('Failed to migrate endpoints:', response.status);
+                return null;
+            }
+        } catch (error) {
+            console.error('Error migrating endpoints:', error);
+            return null;
+        }
     }
 
     // Load user endpoints from server

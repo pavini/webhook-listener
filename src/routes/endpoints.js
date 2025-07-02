@@ -1,6 +1,6 @@
 const express = require('express');
 const { EndpointController } = require('../controllers');
-const { validateEndpoint, validateUserId } = require('../middleware/validation');
+const { validateEndpoint, validateUserId, validateMigration } = require('../middleware/validation');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
@@ -30,6 +30,12 @@ router.get('/:id/requests',
 // Clear endpoint requests
 router.delete('/:id/requests', 
     asyncHandler(EndpointController.clearEndpointRequests.bind(EndpointController))
+);
+
+// Migrate endpoints from one user to another
+router.post('/migrate', 
+    validateMigration, 
+    asyncHandler(EndpointController.migrateEndpoints.bind(EndpointController))
 );
 
 module.exports = router;

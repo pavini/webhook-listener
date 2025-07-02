@@ -112,6 +112,26 @@ class EndpointController {
             }
         }
     }
+    
+    // Migrate endpoints from one user to another
+    async migrateEndpoints(req, res) {
+        try {
+            const { from_user_id, to_user_id } = req.body;
+            
+            const result = await EndpointService.migrateEndpoints(from_user_id, to_user_id);
+            
+            res.json({
+                message: 'Endpoints migrated successfully',
+                migratedCount: result.migratedCount
+            });
+        } catch (error) {
+            if (error.message.includes('required') || error.message.includes('cannot be the same')) {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    }
 }
 
 module.exports = new EndpointController();
