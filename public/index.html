@@ -70,25 +70,44 @@
     <script src="user-manager.js"></script>
     <script src="auth-manager.js"></script>
     
-    <!-- Google tag (gtag.js) with error handling -->
+    <!-- Google tag (gtag.js) - Conditional loading with silent fallback -->
     <script>
-      // Load Google Analytics with error handling
+      // Initialize dataLayer for gtag
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
+      function gtag(){
+        if (window.dataLayer) {
+          dataLayer.push(arguments);
+        }
+      }
       
-      // Only load in production and with error handling
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL';
-        script.onerror = function() {
-          console.log('Google Analytics failed to load - continuing without analytics');
-        };
-        script.onload = function() {
-          gtag('js', new Date());
-          gtag('config', 'G-EFLN6DVLBL');
-        };
-        document.head.appendChild(script);
+      // Only attempt to load Google Analytics in production environments
+      // and only if the current domain suggests a production environment
+      const isProd = window.location.hostname === 'hookdebug.com' || 
+                     (window.location.hostname !== 'localhost' && 
+                      window.location.hostname !== '127.0.0.1' && 
+                      !window.location.hostname.includes('dev') &&
+                      !window.location.hostname.includes('staging'));
+      
+      if (isProd) {
+        // Test connectivity to Google first
+        fetch('https://www.google.com/favicon.ico', { method: 'HEAD', mode: 'no-cors' })
+          .then(() => {
+            // Google is reachable, load analytics
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL';
+            script.onerror = function() {
+              // Silent fallback - no console noise
+            };
+            script.onload = function() {
+              gtag('js', new Date());
+              gtag('config', 'G-EFLN6DVLBL');
+            };
+            document.head.appendChild(script);
+          })
+          .catch(() => {
+            // Google not reachable, skip analytics silently
+          });
       }
     </script>
 </head>
