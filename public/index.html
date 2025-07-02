@@ -70,22 +70,13 @@
     <script src="user-manager.js"></script>
     <script src="auth-manager.js"></script>
     
-    <!-- Google tag (gtag.js) - Load only in production -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL"></script>
     <script>
-      // Only load Google Analytics in production
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        // Load Google Analytics script
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL';
-        document.head.appendChild(script);
-        
-        // Initialize Google Analytics
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-EFLN6DVLBL');
-      }
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-EFLN6DVLBL');
     </script>
 </head>
 <body>

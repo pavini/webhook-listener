@@ -54,6 +54,11 @@ class AuthManager {
             
             // Show success message
             this.showMessage('Login successful! Welcome to Hook Debug.', 'success');
+            
+            // Force auth status refresh
+            setTimeout(() => {
+                this.checkAuthStatus().then(() => this.updateAuthUI());
+            }, 1000);
         } else if (authParam === 'test_success') {
             // Clean up URL
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -86,21 +91,42 @@ class AuthManager {
         const userAvatar = document.getElementById('userAvatar');
         const userName = document.getElementById('userName');
 
+        console.log('Updating auth UI:', { 
+            isAuthenticated: this.isAuthenticated, 
+            currentUser: this.currentUser,
+            githubLoginBtn: !!githubLoginBtn,
+            userInfo: !!userInfo
+        });
+
         if (this.isAuthenticated && this.currentUser) {
             // Show user info, hide login button
-            githubLoginBtn.classList.add('auth-hidden');
-            userInfo.classList.remove('auth-hidden');
-            userInfo.style.display = 'flex';
+            if (githubLoginBtn) {
+                githubLoginBtn.style.display = 'none';
+                githubLoginBtn.classList.add('auth-hidden');
+            }
+            if (userInfo) {
+                userInfo.style.display = 'flex';
+                userInfo.classList.remove('auth-hidden');
+            }
             
             // Update user info
-            userAvatar.src = this.currentUser.avatar_url || '';
-            userAvatar.alt = `${this.currentUser.username} avatar`;
-            userName.textContent = this.currentUser.display_name || this.currentUser.username;
+            if (userAvatar && this.currentUser.avatar_url) {
+                userAvatar.src = this.currentUser.avatar_url;
+                userAvatar.alt = `${this.currentUser.username} avatar`;
+            }
+            if (userName) {
+                userName.textContent = this.currentUser.display_name || this.currentUser.username;
+            }
         } else {
             // Show login button, hide user info
-            githubLoginBtn.classList.remove('auth-hidden');
-            userInfo.classList.add('auth-hidden');
-            userInfo.style.display = 'none';
+            if (githubLoginBtn) {
+                githubLoginBtn.style.display = 'flex';
+                githubLoginBtn.classList.remove('auth-hidden');
+            }
+            if (userInfo) {
+                userInfo.style.display = 'none';
+                userInfo.classList.add('auth-hidden');
+            }
         }
 
         // Trigger auth state change callback
