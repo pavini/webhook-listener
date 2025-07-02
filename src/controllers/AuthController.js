@@ -14,12 +14,19 @@ class AuthController {
 
         // Check if user had anonymous endpoints to migrate
         const anonymousUserId = req.session.anonymousUserId;
+        console.log('=== BACKEND MIGRATION DEBUG ===');
+        console.log('GitHub user ID:', user.id);
+        console.log('Anonymous user ID from session:', anonymousUserId);
+        
         if (anonymousUserId) {
             try {
+                console.log(`Attempting to migrate endpoints from ${anonymousUserId} to ${user.id}`);
                 const User = require('../models/User');
                 const userModel = new User(req.app.locals.db);
                 
                 const migratedCount = await userModel.linkAnonymousEndpoints(user.id, anonymousUserId);
+                console.log(`Migration completed. Migrated count: ${migratedCount}`);
+                
                 if (migratedCount > 0) {
                     req.session.migrationMessage = `${migratedCount} endpoint(s) migrated to your account`;
                 }
@@ -29,6 +36,8 @@ class AuthController {
             } catch (error) {
                 console.error('Error migrating anonymous endpoints:', error);
             }
+        } else {
+            console.log('No anonymous user ID in session - no migration performed');
         }
 
         // Redirect to home with success
@@ -101,8 +110,15 @@ class AuthController {
     storeAnonymousUser = asyncHandler(async (req, res) => {
         const { anonymousUserId } = req.body;
         
+        console.log('=== STORE ANONYMOUS DEBUG ===');
+        console.log('Received anonymousUserId:', anonymousUserId);
+        console.log('Session ID:', req.sessionID);
+        
         if (anonymousUserId && typeof anonymousUserId === 'string') {
             req.session.anonymousUserId = anonymousUserId;
+            console.log('Stored in session:', req.session.anonymousUserId);
+        } else {
+            console.log('Invalid anonymous user ID - not stored');
         }
         
         res.json({ message: 'Anonymous user stored' });

@@ -652,13 +652,24 @@ function renderEndpointsList(endpoints) {
         const currentUserIsAuthenticated = userManager.isAuthenticated && userManager.githubUser;
         const isOwnedByCurrentUser = currentUserIsAuthenticated && endpoint.user_id === userManager.githubUser.id;
         
+        // Debug logging for badge rendering
+        console.log('=== BADGE DEBUG for endpoint:', endpoint.name, '===');
+        console.log('endpoint.user_id:', endpoint.user_id);
+        console.log('isAnonymous:', isAnonymous);
+        console.log('currentUserIsAuthenticated:', currentUserIsAuthenticated);
+        console.log('userManager.githubUser?.id:', userManager.githubUser?.id);
+        console.log('isOwnedByCurrentUser:', isOwnedByCurrentUser);
+        
         let userBadge;
         if (isAnonymous) {
             userBadge = '<span class="endpoint-user-badge anonymous">👤 Anônimo</span>';
-        } else if (isOwnedByCurrentUser || (!isAnonymous && currentUserIsAuthenticated)) {
+            console.log('Badge: Anonymous (starts with user_anonymous_)');
+        } else if (isOwnedByCurrentUser) {
             userBadge = '<span class="endpoint-user-badge github">🔗 GitHub</span>';
+            console.log('Badge: GitHub (owned by current user)');
         } else {
             userBadge = '<span class="endpoint-user-badge anonymous">👤 Anônimo</span>';
+            console.log('Badge: Anonymous (fallback)');
         }
         
         return `

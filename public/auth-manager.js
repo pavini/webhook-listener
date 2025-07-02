@@ -175,9 +175,15 @@ class AuthManager {
     async loginWithGitHub() {
         // Store anonymous user ID if exists for migration
         const anonymousUserId = userManager ? userManager.currentUser?.id : null;
+        console.log('=== LOGIN DEBUG ===');
+        console.log('userManager exists:', !!userManager);
+        console.log('userManager.currentUser:', userManager?.currentUser);
+        console.log('anonymousUserId to store:', anonymousUserId);
+        
         if (anonymousUserId) {
             try {
-                await fetch('/auth/store-anonymous', {
+                console.log('Storing anonymous user ID:', anonymousUserId);
+                const response = await fetch('/auth/store-anonymous', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -185,12 +191,18 @@ class AuthManager {
                     credentials: 'include',
                     body: JSON.stringify({ anonymousUserId })
                 });
+                console.log('Store anonymous response status:', response.status);
+                const result = await response.text();
+                console.log('Store anonymous response:', result);
             } catch (error) {
                 console.error('Error storing anonymous user:', error);
             }
+        } else {
+            console.log('No anonymous user ID to store');
         }
 
         // Redirect to GitHub OAuth
+        console.log('Redirecting to GitHub OAuth...');
         window.location.href = '/auth/github';
     }
 

@@ -104,14 +104,23 @@ class UserManager {
 
     // Get user ID for API calls (use appropriate ID based on auth state)
     getApiUserId() {
+        console.log('=== getApiUserId DEBUG ===');
+        console.log('this.isAuthenticated:', this.isAuthenticated);
+        console.log('this.githubUser:', this.githubUser);
+        console.log('this.currentUser:', this.currentUser);
+        
         if (this.isAuthenticated && this.githubUser) {
+            console.log('Using GitHub user ID:', this.githubUser.id);
             return this.githubUser.id;
         }
         // Ensure we have a current user, create one if needed
         if (!this.currentUser) {
             this.currentUser = this.getOrCreateUser();
+            console.log('Created new anonymous user:', this.currentUser);
         }
-        return this.currentUser ? this.currentUser.id : null;
+        const userId = this.currentUser ? this.currentUser.id : null;
+        console.log('Using anonymous user ID:', userId);
+        return userId;
     }
 
     // Migrate endpoints from anonymous user to authenticated user
