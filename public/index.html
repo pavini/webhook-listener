@@ -70,13 +70,26 @@
     <script src="user-manager.js"></script>
     <script src="auth-manager.js"></script>
     
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL"></script>
+    <!-- Google tag (gtag.js) with error handling -->
     <script>
+      // Load Google Analytics with error handling
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-EFLN6DVLBL');
+      
+      // Only load in production and with error handling
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EFLN6DVLBL';
+        script.onerror = function() {
+          console.log('Google Analytics failed to load - continuing without analytics');
+        };
+        script.onload = function() {
+          gtag('js', new Date());
+          gtag('config', 'G-EFLN6DVLBL');
+        };
+        document.head.appendChild(script);
+      }
     </script>
 </head>
 <body>

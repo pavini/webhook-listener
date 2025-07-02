@@ -52,10 +52,10 @@ const securityHeaders = (req, res, next) => {
     // Basic CSP - allow external resources for GitHub, Google Analytics, and highlight.js
     res.setHeader('Content-Security-Policy', 
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.googletagmanager.com; " +
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com; " +
         "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
         "img-src 'self' data: https://avatars.githubusercontent.com; " +
-        "connect-src 'self' https://www.google-analytics.com;"
+        "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com;"
     );
     
     next();
