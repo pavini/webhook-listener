@@ -32,7 +32,13 @@ class AuthManager {
                 if (data.migrationMessage) {
                     this.showMigrationNotice(data.migrationMessage);
                 }
+            } else if (response.status === 401) {
+                // 401 is expected when user is not authenticated - not an error
+                this.currentUser = null;
+                this.isAuthenticated = false;
             } else {
+                // Only log actual errors (not 401 unauthorized)
+                console.error('Unexpected auth status response:', response.status);
                 this.currentUser = null;
                 this.isAuthenticated = false;
             }
@@ -91,12 +97,7 @@ class AuthManager {
         const userAvatar = document.getElementById('userAvatar');
         const userName = document.getElementById('userName');
 
-        console.log('Updating auth UI:', { 
-            isAuthenticated: this.isAuthenticated, 
-            currentUser: this.currentUser,
-            githubLoginBtn: !!githubLoginBtn,
-            userInfo: !!userInfo
-        });
+        // Debug log removed - auth UI working correctly
 
         if (this.isAuthenticated && this.currentUser) {
             // Show user info, hide login button
