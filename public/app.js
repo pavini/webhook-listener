@@ -646,10 +646,19 @@ function renderEndpointsList(endpoints) {
             i18n.getCurrentLanguage() === 'pt-BR' ? 'pt-BR' : 'en-US'
         );
         
+        // Check if endpoint belongs to anonymous user
+        const isAnonymous = endpoint.user_id && endpoint.user_id.startsWith('user_anonymous_');
+        const userBadge = isAnonymous ? 
+            '<span class="endpoint-user-badge anonymous">👤 Anônimo</span>' : 
+            '<span class="endpoint-user-badge github">🔗 GitHub</span>';
+        
         return `
             <div class="endpoint-item ${isActive ? 'active' : ''}" data-endpoint-id="${endpoint.id}" ${!isActive ? `onclick="switchToEndpoint('${endpoint.id}')"` : ''} style="${!isActive ? 'cursor: pointer;' : ''}">
                 <div class="endpoint-item-header">
-                    <div class="endpoint-item-name">${endpoint.name}</div>
+                    <div class="endpoint-item-name">
+                        ${endpoint.name}
+                        ${userBadge}
+                    </div>
                     <div class="endpoint-item-actions">
                         <button class="endpoint-action-btn delete" onclick="event.stopPropagation(); deleteEndpoint('${endpoint.id}')" title="${i18n.t('user.endpoints.delete')}">🗑️</button>
                     </div>
