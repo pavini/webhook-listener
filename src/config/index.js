@@ -60,8 +60,10 @@ class Config {
                 resave: false,
                 saveUninitialized: false,
                 cookie: {
-                    secure: this.env === 'production',
-                    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+                    secure: false, // Allow cookies over HTTP in development
+                    httpOnly: true,
+                    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+                    sameSite: 'lax'
                 }
             }
         };
