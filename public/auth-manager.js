@@ -61,9 +61,20 @@ class AuthManager {
             // Show success message
             this.showMessage('Login successful! Welcome to Hook Debug.', 'success');
             
-            // Force auth status refresh
+            // Force auth status refresh and trigger user context update
             setTimeout(() => {
-                this.checkAuthStatus().then(() => this.updateAuthUI());
+                this.checkAuthStatus().then(() => {
+                    this.updateAuthUI();
+                    // Force user manager to update context after login
+                    if (userManager && typeof userManager.updateUserContext === 'function') {
+                        userManager.updateUserContext().then(() => {
+                            // Reload endpoints after migration
+                            if (typeof loadUserEndpoints === 'function') {
+                                loadUserEndpoints();
+                            }
+                        });
+                    }
+                });
             }, 1000);
         } else if (authParam === 'test_success') {
             // Clean up URL
@@ -72,9 +83,20 @@ class AuthManager {
             // Show test mode success message
             this.showMessage('Test login successful! (Development mode)', 'success');
             
-            // Refresh auth status
+            // Refresh auth status and update user context
             setTimeout(() => {
-                this.checkAuthStatus().then(() => this.updateAuthUI());
+                this.checkAuthStatus().then(() => {
+                    this.updateAuthUI();
+                    // Force user manager to update context after login
+                    if (userManager && typeof userManager.updateUserContext === 'function') {
+                        userManager.updateUserContext().then(() => {
+                            // Reload endpoints after migration
+                            if (typeof loadUserEndpoints === 'function') {
+                                loadUserEndpoints();
+                            }
+                        });
+                    }
+                });
             }, 500);
         } else if (errorParam === 'auth_failed') {
             // Clean up URL
@@ -138,7 +160,7 @@ class AuthManager {
 
     async loginWithGitHub() {
         // Store anonymous user ID if exists for migration
-        const anonymousUserId = localStorage.getItem('userId');
+        const anonymousUserId = userManager ? userManager.currentUser?.id : null;
         if (anonymousUserId) {
             try {
                 await fetch('/auth/store-anonymous', {
@@ -173,13 +195,16 @@ class AuthManager {
                 if (typeof userManager !== 'undefined') {
                     userManager.isAuthenticated = false;
                     userManager.githubUser = null;
-                    // Don't clear userEndpoints - preserve anonymous endpoints
+                    // Clear userEndpoints to remove GitHub user endpoints from display
+                    userManager.userEndpoints = [];
+                    // Update context to anonymous user
+                    userManager.updateUserContext();
                 }
                 
                 this.updateAuthUI();
                 this.showMessage('Logged out successfully.', 'success');
                 
-                // Reload anonymous user endpoints instead of full page reload
+                // Reload anonymous user endpoints after logout
                 setTimeout(() => {
                     if (typeof loadUserEndpoints !== 'undefined') {
                         loadUserEndpoints();

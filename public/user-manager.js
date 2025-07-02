@@ -28,6 +28,7 @@ class UserManager {
             
             // Migrate endpoints from anonymous user to GitHub user if needed
             if (oldUserId !== newUserId && oldUserId.startsWith('user_anonymous_')) {
+                console.log(`Migrating endpoints from ${oldUserId} to ${newUserId}`);
                 await this.migrateEndpoints(oldUserId, newUserId);
             }
             
@@ -37,6 +38,7 @@ class UserManager {
         } else {
             // Keep anonymous user
             this.currentUser.auth_type = 'anonymous';
+            delete this.currentUser.github_id;
         }
         this.saveUser(this.currentUser);
     }
