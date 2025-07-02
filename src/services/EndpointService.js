@@ -77,6 +77,24 @@ class EndpointService {
         }
     }
     
+    // Migrate endpoints from one user to another
+    async migrateEndpoints(fromUserId, toUserId) {
+        try {
+            if (!fromUserId || !toUserId) {
+                throw new Error('Both from_user_id and to_user_id are required');
+            }
+            
+            if (fromUserId === toUserId) {
+                throw new Error('Source and destination user IDs cannot be the same');
+            }
+            
+            const count = await Endpoint.migrateUserEndpoints(fromUserId, toUserId);
+            return { migratedCount: count };
+        } catch (error) {
+            throw new Error(`Failed to migrate endpoints: ${error.message}`);
+        }
+    }
+    
     // Generate endpoint URL with proper protocol and host
     generateEndpointUrl(endpoint, protocol, host) {
         return endpoint.getWebhookUrl(protocol, host);
