@@ -37,6 +37,7 @@
   "request.userAgent": "User Agent",
   
   "message.endpoint.created": "Endpoint created successfully!",
+  "message.endpoint.create.failed": "Failed to create endpoint. Please check if you're logged in or try again.",
   "message.endpoint.copied": "URL copied to clipboard!",
   "message.requests.cleared": "Requests cleared successfully!",
   "message.error.endpoint.exists": "This endpoint already exists. Choose another name.",

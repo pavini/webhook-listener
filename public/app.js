@@ -444,6 +444,10 @@ const debouncedCreateEndpoint = debounce(async () => {
         // Use the user manager to create endpoint
         const endpoint = await userManager.createEndpoint(name);
         
+        if (!endpoint || !endpoint.id) {
+            throw new Error(i18n.t('message.endpoint.create.failed') || 'Failed to create endpoint');
+        }
+        
         state.currentEndpoint = endpoint;
         userManager.setCurrentEndpoint(endpoint);
         socketManager.emit('join-endpoint', endpoint.id);
