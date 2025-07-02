@@ -211,6 +211,11 @@ class AuthManager {
                     userManager.updateUserContext();
                 }
                 
+                // Clear any active endpoint from UI
+                if (typeof clearActiveEndpoint !== 'undefined') {
+                    clearActiveEndpoint();
+                }
+                
                 this.updateAuthUI();
                 this.showMessage('Logged out successfully.', 'success');
                 
