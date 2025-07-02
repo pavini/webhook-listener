@@ -610,8 +610,21 @@ async function clearRequests() {
 
 // Load user endpoints and display them
 async function loadUserEndpoints() {
+    const endpointsSection = document.getElementById('userEndpointsSection');
+    const endpointsLoading = document.getElementById('endpointsLoading');
+    const endpointsList = document.getElementById('endpointsList');
+    
     try {
+        // Show loading and hide list
+        endpointsLoading.style.display = 'flex';
+        endpointsList.style.display = 'none';
+        
         const endpoints = await userManager.loadUserEndpoints();
+        
+        // Hide loading and show list
+        endpointsLoading.style.display = 'none';
+        endpointsList.style.display = 'block';
+        
         renderEndpointsList(endpoints);
         
         // Check if current active endpoint is still available
@@ -623,7 +636,6 @@ async function loadUserEndpoints() {
         }
         
         // Show the endpoints section if there are endpoints
-        const endpointsSection = document.getElementById('userEndpointsSection');
         if (endpoints.length > 0) {
             endpointsSection.style.display = 'block';
         } else {
@@ -635,6 +647,9 @@ async function loadUserEndpoints() {
         }
     } catch (error) {
         console.error('Error loading user endpoints:', error);
+        // Hide loading on error
+        endpointsLoading.style.display = 'none';
+        endpointsList.style.display = 'block';
     }
 }
 

@@ -58,6 +58,7 @@
   "status.monitoring": "Monitorando",
   
   "loading.text": "Carregando...",
+  "loading.endpoints": "Carregando endpoints...",
   
   "no.requests.title": "Aguardando webhooks...",
   "no.requests.description": "Envie uma requisição para a URL do seu endpoint para ver os detalhes aqui",
