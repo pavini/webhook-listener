@@ -22,36 +22,22 @@ class UserManager {
     }
 
     async updateUserContext() {
-        console.log('updateUserContext called', {
-            isAuthenticated: this.isAuthenticated,
-            githubUser: this.githubUser,
-            currentUser: this.currentUser
-        });
-        
         if (this.isAuthenticated && this.githubUser) {
             const oldUserId = this.currentUser.id;
             const newUserId = this.githubUser.id;
             
-            console.log(`Auth state: oldUserId=${oldUserId}, newUserId=${newUserId}`);
-            
             // Migrate endpoints from anonymous user to GitHub user if needed
             if (oldUserId !== newUserId && oldUserId.startsWith('user_anonymous_')) {
-                console.log(`Migrating endpoints from ${oldUserId} to ${newUserId}`);
-                const result = await this.migrateEndpoints(oldUserId, newUserId);
-                console.log('Migration result:', result);
-            } else {
-                console.log('No migration needed - user IDs match or not anonymous');
+                await this.migrateEndpoints(oldUserId, newUserId);
             }
             
             // Use GitHub user ID for authenticated users
             this.currentUser.github_id = this.githubUser.id;
             this.currentUser.auth_type = 'github';
-            console.log('Updated current user to GitHub type');
         } else {
             // Keep anonymous user
             this.currentUser.auth_type = 'anonymous';
             delete this.currentUser.github_id;
-            console.log('Keeping anonymous user');
         }
         this.saveUser(this.currentUser);
     }
@@ -117,8 +103,6 @@ class UserManager {
     // Migrate endpoints from anonymous user to authenticated user
     async migrateEndpoints(fromUserId, toUserId) {
         try {
-            console.log(`Starting migration from ${fromUserId} to ${toUserId}`);
-            
             const response = await fetch('/api/endpoints/migrate', {
                 method: 'POST',
                 headers: {
@@ -131,15 +115,11 @@ class UserManager {
                 })
             });
 
-            console.log('Migration API response status:', response.status);
-
             if (response.ok) {
                 const result = await response.json();
-                console.log(`Successfully migrated ${result.migratedCount} endpoints`);
                 return result;
             } else {
-                const errorText = await response.text();
-                console.error('Failed to migrate endpoints:', response.status, errorText);
+                console.error('Failed to migrate endpoints:', response.status);
                 return null;
             }
         } catch (error) {
@@ -204,7 +184,8 @@ class UserManager {
 
     // Delete endpoint
     async deleteEndpoint(endpointId) {
-        if (!this.currentUser) return false;
+        const userId = this.getApiUserId();
+        if (!userId) return false;
 
         try {
             const response = await fetch(`/api/endpoints/${endpointId}`, {
@@ -213,7 +194,7 @@ class UserManager {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    user_id: this.currentUser.id
+                    user_id: userId
                 })
             });
 

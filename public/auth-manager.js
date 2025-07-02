@@ -67,13 +67,11 @@ class AuthManager {
                     this.updateAuthUI();
                     // Explicitly update userManager state before context update
                     if (userManager) {
-                        console.log('Updating userManager state after login');
                         userManager.isAuthenticated = this.isAuthenticated;
                         userManager.githubUser = this.currentUser;
                         
                         if (typeof userManager.updateUserContext === 'function') {
                             userManager.updateUserContext().then(() => {
-                                console.log('User context updated, reloading endpoints');
                                 // Reload endpoints after migration
                                 if (typeof loadUserEndpoints === 'function') {
                                     loadUserEndpoints();
@@ -96,13 +94,11 @@ class AuthManager {
                     this.updateAuthUI();
                     // Explicitly update userManager state before context update
                     if (userManager) {
-                        console.log('Updating userManager state after test login');
                         userManager.isAuthenticated = this.isAuthenticated;
                         userManager.githubUser = this.currentUser;
                         
                         if (typeof userManager.updateUserContext === 'function') {
                             userManager.updateUserContext().then(() => {
-                                console.log('User context updated, reloading endpoints');
                                 // Reload endpoints after migration
                                 if (typeof loadUserEndpoints === 'function') {
                                     loadUserEndpoints();
