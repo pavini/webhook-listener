@@ -39,9 +39,15 @@ function initializePassport(db) {
     passport.deserializeUser(async (id, done) => {
         try {
             const user = await userModel.findById(id);
+            if (!user) {
+                // User not found - clear session
+                console.log(`User with ID ${id} not found during deserialization`);
+                return done(null, false);
+            }
             done(null, user);
         } catch (error) {
-            done(error, null);
+            console.error('Error during user deserialization:', error);
+            done(null, false); // Return false instead of error to prevent session errors
         }
     });
 }
