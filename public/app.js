@@ -86,6 +86,9 @@ class SocketManager {
             this.isReconnecting = false;
             updateConnectionStatus();
             
+            // Reload user endpoints when reconnecting
+            loadUserEndpoints();
+            
             if (state.currentEndpoint) {
                 this.socket.emit('join-endpoint', state.currentEndpoint.id);
                 setTimeout(() => loadRequests(), 1000);
@@ -96,6 +99,13 @@ class SocketManager {
             console.log('Disconnected from server');
             state.isConnected = false;
             updateConnectionStatus();
+            
+            // Hide endpoints section when disconnected
+            const endpointsSection = document.getElementById('userEndpointsSection');
+            if (endpointsSection) {
+                endpointsSection.style.display = 'none';
+            }
+            
             this.scheduleReconnect();
         });
 
