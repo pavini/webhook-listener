@@ -712,9 +712,9 @@ body {
     white-space: nowrap;
 }
 
-/* Ensure button is visible by default */
+/* Default button visibility */
 .auth-section .github-login-btn {
-    display: flex !important;
+    display: flex;
 }
 
 /* Hide user info by default */
