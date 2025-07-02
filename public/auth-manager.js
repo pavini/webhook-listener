@@ -173,16 +173,18 @@ class AuthManager {
                 if (typeof userManager !== 'undefined') {
                     userManager.isAuthenticated = false;
                     userManager.githubUser = null;
-                    userManager.userEndpoints = [];
+                    // Don't clear userEndpoints - preserve anonymous endpoints
                 }
                 
                 this.updateAuthUI();
                 this.showMessage('Logged out successfully.', 'success');
                 
-                // Reload page to reset any user-specific data
+                // Reload anonymous user endpoints instead of full page reload
                 setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+                    if (typeof loadUserEndpoints !== 'undefined') {
+                        loadUserEndpoints();
+                    }
+                }, 500);
             } else {
                 this.showMessage('Logout failed. Please try again.', 'error');
             }
