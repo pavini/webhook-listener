@@ -65,14 +65,21 @@ class AuthManager {
             setTimeout(() => {
                 this.checkAuthStatus().then(() => {
                     this.updateAuthUI();
-                    // Force user manager to update context after login
-                    if (userManager && typeof userManager.updateUserContext === 'function') {
-                        userManager.updateUserContext().then(() => {
-                            // Reload endpoints after migration
-                            if (typeof loadUserEndpoints === 'function') {
-                                loadUserEndpoints();
-                            }
-                        });
+                    // Explicitly update userManager state before context update
+                    if (userManager) {
+                        console.log('Updating userManager state after login');
+                        userManager.isAuthenticated = this.isAuthenticated;
+                        userManager.githubUser = this.currentUser;
+                        
+                        if (typeof userManager.updateUserContext === 'function') {
+                            userManager.updateUserContext().then(() => {
+                                console.log('User context updated, reloading endpoints');
+                                // Reload endpoints after migration
+                                if (typeof loadUserEndpoints === 'function') {
+                                    loadUserEndpoints();
+                                }
+                            });
+                        }
                     }
                 });
             }, 1000);
@@ -87,14 +94,21 @@ class AuthManager {
             setTimeout(() => {
                 this.checkAuthStatus().then(() => {
                     this.updateAuthUI();
-                    // Force user manager to update context after login
-                    if (userManager && typeof userManager.updateUserContext === 'function') {
-                        userManager.updateUserContext().then(() => {
-                            // Reload endpoints after migration
-                            if (typeof loadUserEndpoints === 'function') {
-                                loadUserEndpoints();
-                            }
-                        });
+                    // Explicitly update userManager state before context update
+                    if (userManager) {
+                        console.log('Updating userManager state after test login');
+                        userManager.isAuthenticated = this.isAuthenticated;
+                        userManager.githubUser = this.currentUser;
+                        
+                        if (typeof userManager.updateUserContext === 'function') {
+                            userManager.updateUserContext().then(() => {
+                                console.log('User context updated, reloading endpoints');
+                                // Reload endpoints after migration
+                                if (typeof loadUserEndpoints === 'function') {
+                                    loadUserEndpoints();
+                                }
+                            });
+                        }
                     }
                 });
             }, 500);
