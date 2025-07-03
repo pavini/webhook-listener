@@ -11,15 +11,10 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const dbPath = path.join(dataDir, 'hookdebug.db');
-console.log('Database path:', dbPath);
-console.log('Data directory exists:', fs.existsSync(dataDir));
-console.log('Database file exists:', fs.existsSync(dbPath));
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
-  } else {
-    console.log('Successfully connected to SQLite database at:', dbPath);
   }
 });
 
@@ -69,8 +64,6 @@ export async function initDatabase() {
         FOREIGN KEY (endpoint_id) REFERENCES endpoints(id) ON DELETE CASCADE
       )
     `);
-
-    console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;

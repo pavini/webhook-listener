@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { HttpRequest, Endpoint } from './types';
 import { useSocket } from './hooks/useSocket';
 import { useAuth } from './contexts/AuthContext';
+import { useAnonymousEndpoints } from './hooks/useAnonymousEndpoints';
 import { BACKEND_URL } from './config';
 import { EndpointList } from './components/EndpointList';
 import { RequestList } from './components/RequestList';
@@ -18,6 +19,7 @@ function App() {
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const { connected, subscribeToRequests, subscribeToEndpoints } = useSocket();
   const { user } = useAuth();
+  const { addAnonymousEndpoint, removeAnonymousEndpoint } = useAnonymousEndpoints();
 
   // Clear data when user logs out
   useEffect(() => {
@@ -87,6 +89,11 @@ function App() {
 
     const unsubscribeEndpoints = subscribeToEndpoints((endpoint: Endpoint) => {
       setEndpoints(prev => [...prev, endpoint]);
+      
+      // Track anonymous endpoints for migration
+      if (!user) {
+        addAnonymousEndpoint(endpoint.id);
+      }
     });
 
     return () => {
@@ -119,6 +126,11 @@ function App() {
     if (selectedEndpoint === endpointId) {
       setSelectedEndpoint(null);
       setSelectedRequest(null);
+    }
+    
+    // Remove from anonymous tracking if user is not logged in
+    if (!user) {
+      removeAnonymousEndpoint(endpointId);
     }
   };
 

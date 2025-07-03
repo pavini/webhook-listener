@@ -44,14 +44,13 @@ app.use(cors({
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
-  resave: true, // Force save to ensure persistence during OAuth flow
-  saveUninitialized: true,
+  resave: false,
+  saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    httpOnly: false, // Allow JavaScript access for cross-domain
-    domain: process.env.NODE_ENV === 'production' ? '.hookdebug.com' : undefined
+    sameSite: 'lax',
+    httpOnly: true
   }
 }));
 
@@ -115,78 +114,15 @@ app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] 
 app.get('/auth/github/callback', 
   passport.authenticate('github', { failureRedirect: process.env.FRONTEND_URL }),
   async (req, res) => {
-    try {
-      console.log('OAuth callback - User authenticated:', req.user ? req.user.username : 'No user');
-      console.log('OAuth callback - Session ID:', req.sessionID);
-      console.log('OAuth callback - Is authenticated:', req.isAuthenticated());
-      console.log('OAuth callback - Request cookies:', req.headers.cookie);
-      console.log('OAuth callback - Host:', req.headers.host);
-      
-      // Migrate anonymous endpoints to authenticated user
-      console.log('OAuth callback - Checking for anonymous endpoints to migrate');
-      console.log('OAuth callback - Session anonymousEndpoints:', req.session.anonymousEndpoints);
-      console.log('OAuth callback - Available anonymous endpoints:', Array.from(anonymousEndpoints.keys()));
-      
-      if (req.session.anonymousEndpoints) {
-        const endpointsToMigrate = JSON.parse(req.session.anonymousEndpoints);
-        console.log('OAuth callback - Migrating endpoints:', endpointsToMigrate);
-        
-        for (const endpointId of endpointsToMigrate) {
-          const endpoint = anonymousEndpoints.get(endpointId);
-          console.log('OAuth callback - Migrating endpoint:', endpointId, endpoint ? 'found' : 'not found');
-          
-          if (endpoint) {
-            // Create endpoint in database for authenticated user
-            await createEndpoint({
-              id: endpoint.id,
-              user_id: req.user.id,
-              name: endpoint.name,
-              path: endpoint.path
-            });
-            console.log('OAuth callback - Migrated endpoint to database:', endpoint.name);
-            
-            // Migrate requests
-            const endpointRequests = Array.from(anonymousRequests.values()).filter(r => r.endpointId === endpointId);
-            console.log('OAuth callback - Migrating requests for endpoint:', endpointId, 'count:', endpointRequests.length);
-            
-            for (const request of endpointRequests) {
-              await createRequest({
-                id: request.id,
-                endpoint_id: endpointId,
-                method: request.method,
-                url: request.url,
-                headers: request.headers,
-                body: request.body
-              }).catch(err => console.error('Error migrating request:', err));
-            }
-            
-            // Remove from anonymous storage
-            anonymousEndpoints.delete(endpointId);
-            endpointRequests.forEach(r => anonymousRequests.delete(r.id));
-          }
-        }
-        
-        // Clear session data
-        delete req.session.anonymousEndpoints;
-        console.log('OAuth callback - Migration completed, cleared session data');
-      } else {
-        console.log('OAuth callback - No anonymous endpoints to migrate');
-      }
-    } catch (error) {
-      console.error('Error migrating endpoints:', error);
-    }
+    // OAuth authentication successful - migration will be handled by frontend
     
     // Create persistent auth token
     const authToken = uuidv4();
     authTokens.set(authToken, {
       user: req.user,
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-      migrationCompleted: true // Add migration status flag
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     });
-    
-    console.log('OAuth callback - Created auth token:', authToken);
-    console.log('OAuth callback - Stored user:', req.user.username);
     
     // Redirect with token
     res.redirect(`${process.env.FRONTEND_URL}?auth_token=${authToken}`);
@@ -205,7 +141,6 @@ app.post('/auth/logout', (req, res) => {
 // Token validation endpoint
 app.post('/auth/validate-token', (req, res) => {
   const { token } = req.body;
-  console.log('Token validation - Token:', token);
   
   if (!token) {
     return res.status(400).json({ error: 'Token required' });
@@ -214,17 +149,13 @@ app.post('/auth/validate-token', (req, res) => {
   const authData = authTokens.get(token);
   
   if (!authData) {
-    console.log('Token validation - Invalid token');
     return res.status(401).json({ error: 'Invalid token' });
   }
   
   if (authData.expiresAt < new Date()) {
-    console.log('Token validation - Expired token');
     authTokens.delete(token);
     return res.status(401).json({ error: 'Token expired' });
   }
-  
-  console.log('Token validation - Valid token for user:', authData.user.username);
   
   res.json({
     user: {
@@ -238,22 +169,13 @@ app.post('/auth/validate-token', (req, res) => {
 
 // Token-based authentication check
 app.get('/auth/me', (req, res) => {
-  console.log('Auth check - Session ID:', req.sessionID);
-  console.log('Auth check - Is authenticated:', req.isAuthenticated());
-  console.log('Auth check - User:', req.user ? req.user.username : 'No user');
-  console.log('Auth check - Cookies:', req.headers.cookie);
-  console.log('Auth check - Host:', req.headers.host);
-  console.log('Auth check - Origin:', req.headers.origin);
-  
   // Check for token in headers
   const authToken = req.headers.authorization?.replace('Bearer ', '');
-  console.log('Auth check - Token:', authToken);
   
   if (authToken) {
     const authData = authTokens.get(authToken);
     
     if (authData && authData.expiresAt > new Date()) {
-      console.log('Auth check - Valid token for user:', authData.user.username);
       return res.json({
         user: {
           id: authData.user.id,
@@ -263,7 +185,6 @@ app.get('/auth/me', (req, res) => {
         }
       });
     } else {
-      console.log('Auth check - Invalid or expired token');
       if (authData) authTokens.delete(authToken);
     }
   }
@@ -283,17 +204,64 @@ app.get('/auth/me', (req, res) => {
   }
 });
 
-// Check for pending anonymous endpoints
-app.get('/auth/pending-migration', (req, res) => {
-  if (req.session.anonymousEndpoints) {
-    const pendingEndpoints = JSON.parse(req.session.anonymousEndpoints);
+// Migrate anonymous endpoints to authenticated user
+app.post('/auth/migrate-endpoints', async (req, res) => {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const { endpointIds } = req.body;
+  if (!endpointIds || !Array.isArray(endpointIds)) {
+    return res.status(400).json({ error: 'Endpoint IDs array required' });
+  }
+
+  try {
+    let migratedCount = 0;
+    
+    for (const endpointId of endpointIds) {
+      const endpoint = anonymousEndpoints.get(endpointId);
+      
+      if (endpoint) {
+        // Create endpoint in database for authenticated user
+        await createEndpoint({
+          id: endpoint.id,
+          user_id: user.id,
+          name: endpoint.name,
+          path: endpoint.path
+        });
+        
+        // Migrate requests
+        const endpointRequests = Array.from(anonymousRequests.values())
+          .filter(r => r.endpointId === endpointId);
+        
+        for (const request of endpointRequests) {
+          await createRequest({
+            id: request.id,
+            endpoint_id: endpointId,
+            method: request.method,
+            url: request.url,
+            headers: request.headers,
+            body: request.body
+          }).catch(err => console.error('Error migrating request:', err));
+        }
+        
+        // Remove from anonymous storage
+        anonymousEndpoints.delete(endpointId);
+        endpointRequests.forEach(r => anonymousRequests.delete(r.id));
+        
+        migratedCount++;
+      }
+    }
+    
     res.json({ 
-      hasPendingMigration: true, 
-      pendingCount: pendingEndpoints.length,
-      endpointIds: pendingEndpoints
+      success: true, 
+      migratedCount,
+      totalRequested: endpointIds.length 
     });
-  } else {
-    res.json({ hasPendingMigration: false, pendingCount: 0 });
+  } catch (error) {
+    console.error('Error during migration:', error);
+    res.status(500).json({ error: 'Migration failed' });
   }
 });
 
@@ -365,18 +333,14 @@ const captureRequest = (req, res, next) => {
 app.get('/api/endpoints', optionalAuth, async (req, res) => {
   try {
     const user = getAuthenticatedUser(req);
-    console.log('API /endpoints - User:', user ? user.username : 'anonymous');
-    console.log('API /endpoints - Token header:', req.headers.authorization);
     
     if (user) {
       // Get user's endpoints from database
       const endpoints = await getUserEndpoints(user.id);
-      console.log('API /endpoints - Returning', endpoints.length, 'user endpoints');
       res.json(endpoints);
     } else {
       // Get anonymous endpoints from memory
       const anonymousEndpointsList = Array.from(anonymousEndpoints.values());
-      console.log('API /endpoints - Returning', anonymousEndpointsList.length, 'anonymous endpoints');
       res.json(anonymousEndpointsList);
     }
   } catch (error) {
@@ -400,7 +364,6 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
     };
     
     const user = getAuthenticatedUser(req);
-    console.log('API POST /endpoints - User:', user ? user.username : 'anonymous');
     
     if (user) {
       // Save to database for authenticated users
@@ -411,29 +374,9 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
         path
       });
       endpoint.user_id = user.id;
-      console.log('API POST /endpoints - Created endpoint for user:', user.username);
     } else {
       // Save to memory for anonymous users
       anonymousEndpoints.set(endpointId, endpoint);
-      
-      // Track anonymous endpoints in session for migration
-      if (!req.session.anonymousEndpoints) {
-        req.session.anonymousEndpoints = JSON.stringify([]);
-      }
-      const currentEndpoints = JSON.parse(req.session.anonymousEndpoints);
-      currentEndpoints.push(endpointId);
-      req.session.anonymousEndpoints = JSON.stringify(currentEndpoints);
-      
-      // Ensure session is saved
-      req.session.save((err) => {
-        if (err) {
-          console.error('Error saving session:', err);
-        } else {
-          console.log('Session saved with anonymous endpoint:', endpointId);
-          console.log('Session ID:', req.sessionID);
-          console.log('Session anonymousEndpoints:', req.session.anonymousEndpoints);
-        }
-      });
     }
     
     io.emit('endpoint_created', endpoint);
@@ -458,13 +401,6 @@ app.delete('/api/endpoints/:id', optionalAuth, async (req, res) => {
         anonymousEndpoints.delete(id);
         const endpointRequests = Array.from(anonymousRequests.values()).filter(r => r.endpointId === id);
         endpointRequests.forEach(r => anonymousRequests.delete(r.id));
-        
-        // Remove from session tracking
-        if (req.session.anonymousEndpoints) {
-          const currentEndpoints = JSON.parse(req.session.anonymousEndpoints);
-          const updatedEndpoints = currentEndpoints.filter(epId => epId !== id);
-          req.session.anonymousEndpoints = JSON.stringify(updatedEndpoints);
-        }
       } else {
         return res.status(404).json({ message: 'Endpoint not found' });
       }
@@ -481,17 +417,14 @@ app.delete('/api/endpoints/:id', optionalAuth, async (req, res) => {
 app.get('/api/requests', optionalAuth, async (req, res) => {
   try {
     const user = getAuthenticatedUser(req);
-    console.log('API /requests - User:', user ? user.username : 'anonymous');
     
     if (user) {
       // Get user's requests from database
       const requests = await getUserRequests(user.id);
-      console.log('API /requests - Returning', requests.length, 'user requests');
       res.json(requests);
     } else {
       // Get anonymous requests from memory
       const anonymousRequestsList = Array.from(anonymousRequests.values());
-      console.log('API /requests - Returning', anonymousRequestsList.length, 'anonymous requests');
       res.json(anonymousRequestsList);
     }
   } catch (error) {
@@ -571,15 +504,13 @@ app.all('/:path', captureRequest, async (req, res) => {
 });
 
 io.on('connection', async (socket) => {
-  console.log('Client connected:', socket.id);
-  
   // Send initial data - for now, send anonymous data
   // In a real app, you'd want to authenticate the socket connection
   socket.emit('endpoints', Array.from(anonymousEndpoints.values()));
   socket.emit('requests', Array.from(anonymousRequests.values()));
   
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    // Client disconnected
   });
 });
 
