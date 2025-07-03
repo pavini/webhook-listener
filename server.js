@@ -45,11 +45,12 @@ app.use(cors({
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    httpOnly: false, // Allow JavaScript access for cross-domain
     domain: process.env.NODE_ENV === 'production' ? '.hookdebug.com' : undefined
   }
 }));
@@ -144,7 +145,13 @@ app.get('/auth/github/callback',
         console.error('Error saving session:', err);
       }
       console.log('OAuth callback - Session saved, redirecting to:', process.env.FRONTEND_URL);
-      res.redirect(process.env.FRONTEND_URL);
+      
+      // Create a temporary token to allow frontend to establish session
+      const tempToken = uuidv4();
+      req.session.tempToken = tempToken;
+      
+      // Redirect with token to allow frontend to establish session
+      res.redirect(`${process.env.FRONTEND_URL}?auth_token=${tempToken}`);
     });
   }
 );
@@ -156,6 +163,39 @@ app.post('/auth/logout', (req, res) => {
     }
     res.json({ message: 'Logged out successfully' });
   });
+});
+
+// Token validation endpoint
+app.post('/auth/validate-token', (req, res) => {
+  const { token } = req.body;
+  console.log('Token validation - Token:', token);
+  console.log('Token validation - Session ID:', req.sessionID);
+  
+  if (!token) {
+    return res.status(400).json({ error: 'Token required' });
+  }
+  
+  if (req.session.tempToken === token) {
+    // Token is valid, clear it and establish session
+    delete req.session.tempToken;
+    console.log('Token validation - Valid token, session established');
+    
+    if (req.isAuthenticated()) {
+      res.json({
+        user: {
+          id: req.user.id,
+          username: req.user.username,
+          display_name: req.user.display_name,
+          avatar_url: req.user.avatar_url
+        }
+      });
+    } else {
+      res.json({ user: null });
+    }
+  } else {
+    console.log('Token validation - Invalid token');
+    res.status(401).json({ error: 'Invalid token' });
+  }
 });
 
 app.get('/auth/me', (req, res) => {
