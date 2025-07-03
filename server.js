@@ -94,6 +94,8 @@ app.get('/auth/github/callback',
       console.log('OAuth callback - User authenticated:', req.user ? req.user.username : 'No user');
       console.log('OAuth callback - Session ID:', req.sessionID);
       console.log('OAuth callback - Is authenticated:', req.isAuthenticated());
+      console.log('OAuth callback - Request cookies:', req.headers.cookie);
+      console.log('OAuth callback - Host:', req.headers.host);
       
       // Migrate anonymous endpoints to authenticated user
       if (req.session.anonymousEndpoints) {
@@ -136,7 +138,14 @@ app.get('/auth/github/callback',
       console.error('Error migrating endpoints:', error);
     }
     
-    res.redirect(process.env.FRONTEND_URL);
+    // Ensure session is saved before redirect
+    req.session.save((err) => {
+      if (err) {
+        console.error('Error saving session:', err);
+      }
+      console.log('OAuth callback - Session saved, redirecting to:', process.env.FRONTEND_URL);
+      res.redirect(process.env.FRONTEND_URL);
+    });
   }
 );
 
@@ -154,6 +163,8 @@ app.get('/auth/me', (req, res) => {
   console.log('Auth check - Is authenticated:', req.isAuthenticated());
   console.log('Auth check - User:', req.user ? req.user.username : 'No user');
   console.log('Auth check - Cookies:', req.headers.cookie);
+  console.log('Auth check - Host:', req.headers.host);
+  console.log('Auth check - Origin:', req.headers.origin);
   
   if (req.isAuthenticated()) {
     res.json({
