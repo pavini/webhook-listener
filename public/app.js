@@ -858,6 +858,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize i18n system
     i18n.initializeLanguage();
     
+    // Initialize user manager
+    userManager.init();
+    
+    // Wait for auth manager to initialize and check auth status
+    if (typeof authManager !== 'undefined') {
+        await authManager.checkAuthStatus();
+        // Update userManager with auth state
+        userManager.isAuthenticated = authManager.isAuthenticated;
+        userManager.githubUser = authManager.currentUser;
+        await userManager.updateUserContext();
+    }
+    
     // Initialize socket connection
     socketManager.connect();
     state.socket = socketManager.socket;
