@@ -899,6 +899,11 @@ async function changeLanguage(language) {
         updateEndpointUI(state.currentEndpoint);
     }
     
+    // Re-render endpoints list to update dates and translations
+    if (userManager.isAuthenticated) {
+        await loadUserEndpoints();
+    }
+    
     // Update any visible messages
     const errorDiv = document.getElementById('errorMessage');
     const successDiv = document.getElementById('successMessage');
