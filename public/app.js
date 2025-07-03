@@ -854,7 +854,7 @@ async function loadCleanupInfo() {
 }
 
 // Event listeners
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Initialize i18n system
     i18n.initializeLanguage();
     
@@ -862,8 +862,8 @@ document.addEventListener('DOMContentLoaded', () => {
     socketManager.connect();
     state.socket = socketManager.socket;
     
-    // Load user endpoints and saved endpoint
-    loadUserEndpoints();
+    // Load user endpoints first, then load saved endpoint
+    await loadUserEndpoints();
     loadSavedEndpoint();
     loadCleanupInfo();
     
