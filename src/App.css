@@ -243,7 +243,7 @@
 .endpoint-url {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   color: var(--accent-cyan);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -254,6 +254,8 @@
   border: 1px solid var(--border-subtle);
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .endpoint-url:hover {
@@ -269,10 +271,12 @@
 }
 
 .copied-indicator {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--bg-primary);
   animation: fadeIn 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 @keyframes fadeIn {
