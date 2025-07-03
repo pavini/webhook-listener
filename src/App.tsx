@@ -19,25 +19,52 @@ function App() {
   const { connected, subscribeToRequests, subscribeToEndpoints } = useSocket();
   const { user } = useAuth();
 
+  // Clear data when user logs out
+  useEffect(() => {
+    if (!user) {
+      console.log('User logged out, clearing authenticated data');
+      // Keep endpoints and requests as they will be reloaded for anonymous user
+    }
+  }, [user]);
+
+  // Helper function to make authenticated requests
+  const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
+    const authToken = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+    
+    if (authToken) {
+      headers.authorization = `Bearer ${authToken}`;
+    }
+    
+    return fetch(url, {
+      credentials: 'include',
+      ...options,
+      headers,
+    });
+  };
+
   // Load initial data when authentication changes
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        console.log('Loading initial data for user:', user ? user.username : 'anonymous');
+        
         // Load endpoints
-        const endpointsResponse = await fetch(`${BACKEND_URL}/api/endpoints`, {
-          credentials: 'include'
-        });
+        const endpointsResponse = await makeAuthenticatedRequest(`${BACKEND_URL}/api/endpoints`);
         if (endpointsResponse.ok) {
           const endpointsData = await endpointsResponse.json();
+          console.log('Loaded endpoints:', endpointsData.length);
           setEndpoints(endpointsData);
         }
 
         // Load requests
-        const requestsResponse = await fetch(`${BACKEND_URL}/api/requests`, {
-          credentials: 'include'
-        });
+        const requestsResponse = await makeAuthenticatedRequest(`${BACKEND_URL}/api/requests`);
         if (requestsResponse.ok) {
           const requestsData = await requestsResponse.json();
+          console.log('Loaded requests:', requestsData.length);
           setRequests(requestsData);
         }
       } catch (error) {
@@ -70,12 +97,10 @@ function App() {
 
   const handleCreateEndpoint = async (name: string) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/endpoints`, {
+      console.log('Creating endpoint:', name, 'for user:', user ? user.username : 'anonymous');
+      
+      const response = await makeAuthenticatedRequest(`${BACKEND_URL}/api/endpoints`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify({ name }),
       });
       
