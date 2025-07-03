@@ -1,7 +1,27 @@
 import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs';
 
-const db = new sqlite3.Database('./hookdebug.db');
+// Ensure data directory exists
+// Use /app/data for production (Docker/EasyPanel), current directory for development
+const dataDir = process.env.DB_PATH || (process.env.NODE_ENV === 'production' ? '/app/data' : './data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const dbPath = path.join(dataDir, 'hookdebug.db');
+console.log('Database path:', dbPath);
+console.log('Data directory exists:', fs.existsSync(dataDir));
+console.log('Database file exists:', fs.existsSync(dbPath));
+
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Error opening database:', err.message);
+  } else {
+    console.log('Successfully connected to SQLite database at:', dbPath);
+  }
+});
 
 // Promisify database methods
 db.run = promisify(db.run.bind(db));
