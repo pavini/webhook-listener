@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Endpoint } from '../types';
+import { BACKEND_URL } from '../config';
 
 interface EndpointListProps {
   endpoints: Endpoint[];
@@ -18,7 +19,7 @@ export const EndpointList = ({
 
   const handleCopyUrl = async (endpoint: Endpoint, e: React.MouseEvent) => {
     e.stopPropagation();
-    const fullUrl = `http://localhost:3001/${endpoint.path}`;
+    const fullUrl = `${BACKEND_URL}/${endpoint.path}`;
     
     try {
       await navigator.clipboard.writeText(fullUrl);
@@ -67,7 +68,7 @@ export const EndpointList = ({
                   onClick={(e) => handleCopyUrl(endpoint, e)}
                   title="Click to copy URL"
                 >
-                  <span>http://localhost:3001/{endpoint.path}</span>
+                  <span>{BACKEND_URL}/{endpoint.path}</span>
                   {copiedEndpoints.has(endpoint.id) && <span className="copied-indicator">✓ Copied!</span>}
                 </div>
                 <span className="request-count">

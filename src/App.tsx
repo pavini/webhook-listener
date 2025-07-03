@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { HttpRequest, Endpoint } from './types';
 import { useSocket } from './hooks/useSocket';
 import { useAuth } from './contexts/AuthContext';
+import { BACKEND_URL } from './config';
 import { EndpointList } from './components/EndpointList';
 import { RequestList } from './components/RequestList';
 import { RequestDetails } from './components/RequestDetails';
@@ -22,7 +23,7 @@ function App() {
     const loadInitialData = async () => {
       try {
         // Load endpoints
-        const endpointsResponse = await fetch('http://localhost:3001/api/endpoints', {
+        const endpointsResponse = await fetch(`${BACKEND_URL}/api/endpoints`, {
           credentials: 'include'
         });
         if (endpointsResponse.ok) {
@@ -31,7 +32,7 @@ function App() {
         }
 
         // Load requests
-        const requestsResponse = await fetch('http://localhost:3001/api/requests', {
+        const requestsResponse = await fetch(`${BACKEND_URL}/api/requests`, {
           credentials: 'include'
         });
         if (requestsResponse.ok) {
@@ -68,7 +69,7 @@ function App() {
 
   const handleCreateEndpoint = async (name: string) => {
     try {
-      const response = await fetch('http://localhost:3001/api/endpoints', {
+      const response = await fetch(`${BACKEND_URL}/api/endpoints`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

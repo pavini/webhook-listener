@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { HttpRequest, Endpoint } from '../types';
+import { BACKEND_URL } from '../config';
 
 export const useSocket = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io(BACKEND_URL);
     
     newSocket.on('connect', () => {
       setConnected(true);

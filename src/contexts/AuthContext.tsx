@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { BACKEND_URL } from '../config';
 
 interface User {
   id: string;
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('http://localhost:3001/auth/me', {
+      const response = await fetch(`${BACKEND_URL}/auth/me`, {
         credentials: 'include',
       });
       
@@ -54,12 +55,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const login = () => {
-    window.location.href = 'http://localhost:3001/auth/github';
+    window.location.href = `${BACKEND_URL}/auth/github`;
   };
 
   const logout = async () => {
     try {
-      await fetch('http://localhost:3001/auth/logout', {
+      await fetch(`${BACKEND_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
