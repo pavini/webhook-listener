@@ -49,7 +49,8 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    domain: process.env.NODE_ENV === 'production' ? '.hookdebug.com' : undefined
   }
 }));
 
@@ -90,6 +91,10 @@ app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: process.env.FRONTEND_URL }),
   async (req, res) => {
     try {
+      console.log('OAuth callback - User authenticated:', req.user ? req.user.username : 'No user');
+      console.log('OAuth callback - Session ID:', req.sessionID);
+      console.log('OAuth callback - Is authenticated:', req.isAuthenticated());
+      
       // Migrate anonymous endpoints to authenticated user
       if (req.session.anonymousEndpoints) {
         const endpointsToMigrate = JSON.parse(req.session.anonymousEndpoints);
@@ -145,6 +150,11 @@ app.post('/auth/logout', (req, res) => {
 });
 
 app.get('/auth/me', (req, res) => {
+  console.log('Auth check - Session ID:', req.sessionID);
+  console.log('Auth check - Is authenticated:', req.isAuthenticated());
+  console.log('Auth check - User:', req.user ? req.user.username : 'No user');
+  console.log('Auth check - Cookies:', req.headers.cookie);
+  
   if (req.isAuthenticated()) {
     res.json({
       user: {
