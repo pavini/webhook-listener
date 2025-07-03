@@ -1,61 +1,63 @@
-# Claude Instructions
+# HookDebug Project Guidelines
 
 ## Project Overview
-This is a webhook listener application called "Hook Debug" - a tool for testing, capturing and monitoring webhooks in real-time with multi-user support and detailed HTTP request analysis.
+HookDebug is a React 18+ application built with Vite that allows developers to create HTTP endpoints for testing webhooks and API requests in real-time, similar to webhook.site.
 
-## Key Technologies
-- Node.js/Express backend
-- Socket.io for real-time communication
-- HTML/CSS/JavaScript frontend
-- Multi-language support (Portuguese/English)
+## Core Features
+- Create multiple HTTP endpoints for listening to requests
+- Real-time request monitoring using WebSockets
+- Navigate between different endpoints
+- View request details and history
 
-## Development Commands
-```bash
-# Install dependencies
-npm install
+## Development Guidelines
 
-# Start development server
-npm start
+### Testing
+- **IMPORTANT**: All tests MUST be run using Docker containers
+- NEVER run tests locally on the development machine
+- Use the provided Docker configuration for consistent testing environments
 
-# Run tests (if available)
-npm test
+### Code Standards
+- Use TypeScript for type safety
+- Follow React 18+ patterns and best practices
+- Implement proper error handling
+- Use modern JavaScript/TypeScript features
 
-# Lint code (if available)
-npm run lint
+### Project Structure
+- Keep components modular and reusable
+- Separate business logic from UI components
+- Use proper state management patterns
+- Implement clean architecture principles
 
-# Type check (if available)
-npm run typecheck
-```
+## Technical Stack
+- React 18+
+- Vite
+- TypeScript
+- WebSockets for real-time communication
+- Docker for testing environment
 
-## File Structure
-- `public/` - Frontend assets (HTML, CSS, JS)
-- `public/index.html` - Main application page
-- `public/style.css` - Main stylesheet
-- `public/app.js` - Main frontend JavaScript
-- `public/i18n.js` - Internationalization
-- `public/user-manager.js` - User management
+## Getting Started
 
-## Code Conventions
-- Portuguese language for UI text by default
-- Multi-language support via i18n system
-- Semantic HTML structure
-- Modern CSS with responsive design
-- Clean JavaScript with proper error handling
+### Development
+1. Install dependencies: `npm install`
+2. Start the backend server: `npm run server:dev`
+3. Start the React app: `npm run dev`
+4. Visit `http://localhost:5173` to use the application
 
-## Important Instructions
-- **NEVER** mention Claude, AI assistance, or automated generation in:
-  - Git commit messages
-  - Pull request descriptions
-  - Code comments
-  - Any project documentation
-  - Any external communications
-- All contributions should appear as natural human work
-- Remove any automated footers or signatures from commits/PRs
-- **NEVER** create Pull Requests automatically - only when explicitly requested by the user
+### Running with Docker
+- Build and run (frontend + backend in single container): `docker-compose up --build`
+- Access the app at `http://localhost:5173`
+- Backend API runs on `http://localhost:3001`
+- Stop services: `docker-compose down`
 
-## Notes
-- The application handles webhook debugging and monitoring
-- Real-time updates via Socket.io
-- SEO optimized with structured data
-- Google Analytics integration
-- Automatic data cleanup after 60 days
+### Usage
+1. Create a new endpoint by providing a name and path
+2. Send HTTP requests to `http://localhost:3001/your-endpoint-path`
+3. View requests in real-time through the web interface
+4. Navigate between different endpoints to filter requests
+5. Click on any request to view detailed information
+
+## Important Notes
+- Never reference AI assistance in code, comments, PRs, or commits
+- Focus on clean, maintainable code
+- Prioritize user experience and real-time functionality
+- Ensure proper error handling and edge cases

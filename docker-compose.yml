@@ -1,28 +1,13 @@
 version: '3.8'
 
 services:
-  webhook-listener:
+  hookdebug:
     build: .
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
+      - "3001:3001"
+      - "5173:5173"
     volumes:
-      - webhook-data:/app/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.webhook.rule=Host(`webhook.yourdomain.com`)"
-      - "traefik.http.routers.webhook.tls=true"
-      - "traefik.http.routers.webhook.tls.certresolver=letsencrypt"
-
-volumes:
-  webhook-data:
-    driver: local
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development

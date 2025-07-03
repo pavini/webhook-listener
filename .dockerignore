@@ -7,10 +7,3 @@ README.md
 .nyc_output
 coverage
 .DS_Store
-*.log
-.vscode
-.idea
-webhooks.db
-data/
-*.md
-.github

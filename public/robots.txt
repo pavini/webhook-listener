@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-
-# Sitemap
-Sitemap: https://hookdebug.com/sitemap.xml
-
-# Crawl-delay for polite crawling
-Crawl-delay: 1
