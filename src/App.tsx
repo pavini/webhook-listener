@@ -8,6 +8,7 @@ import { RequestList } from './components/RequestList';
 import { RequestDetails } from './components/RequestDetails';
 import { CreateEndpoint } from './components/CreateEndpoint';
 import { UserButton } from './components/UserButton';
+import Logo from './components/Logo';
 import './App.css';
 
 function App() {
@@ -16,7 +17,7 @@ function App() {
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const { connected, subscribeToRequests, subscribeToEndpoints } = useSocket();
-  const { user, refreshAuth } = useAuth();
+  const { user } = useAuth();
 
   // Load initial data when authentication changes
   useEffect(() => {
@@ -114,7 +115,10 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>HookDebug</h1>
+        <h1>
+          <Logo />
+          HookDebug
+        </h1>
         <div className="header-controls">
           <div className="connection-status">
             Status: <span className={connected ? 'connected' : 'disconnected'}>

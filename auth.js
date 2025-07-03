@@ -4,10 +4,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { getUserByGithubId, createUser, getUserById } from './database.js';
 
 export function configurePassport() {
+  const backendUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://request.hookdebug.com'
+    : 'http://localhost:3001';
+  
   passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: "/auth/github/callback"
+    callbackURL: `${backendUrl}/auth/github/callback`
   },
   async (accessToken, refreshToken, profile, done) => {
     try {

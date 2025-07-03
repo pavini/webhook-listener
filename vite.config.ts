@@ -7,4 +7,5 @@ export default defineConfig({
   server: {
     allowedHosts: ['hookdebug.com'],
   },
+  assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg'],
 })
