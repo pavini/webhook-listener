@@ -71,6 +71,16 @@ export function requireAuth(req, res, next) {
 }
 
 export function optionalAuth(req, res, next) {
-  // Add user to request if authenticated, but don't require it
+  // Check for Bearer token first
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Get authTokens from the main server file (we'll need to pass it)
+    // For now, we'll handle this in the server.js file directly
+    return next();
+  }
+  
+  // Fallback to session-based auth
   next();
 }

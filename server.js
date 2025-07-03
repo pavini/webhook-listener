@@ -88,6 +88,27 @@ const anonymousRequests = new Map();
 // In-memory storage for auth tokens (production should use Redis)
 const authTokens = new Map();
 
+// Helper function to check authentication (session or token)
+const getAuthenticatedUser = (req) => {
+  // Check for Bearer token first
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.replace('Bearer ', '');
+    const authData = authTokens.get(token);
+    
+    if (authData && authData.expiresAt > new Date()) {
+      return authData.user;
+    }
+  }
+  
+  // Fallback to session-based auth
+  if (req.isAuthenticated()) {
+    return req.user;
+  }
+  
+  return null;
+};
+
 // Authentication routes
 app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
 
@@ -315,13 +336,20 @@ const captureRequest = (req, res, next) => {
 // API routes
 app.get('/api/endpoints', optionalAuth, async (req, res) => {
   try {
-    if (req.isAuthenticated()) {
+    const user = getAuthenticatedUser(req);
+    console.log('API /endpoints - User:', user ? user.username : 'anonymous');
+    console.log('API /endpoints - Token header:', req.headers.authorization);
+    
+    if (user) {
       // Get user's endpoints from database
-      const endpoints = await getUserEndpoints(req.user.id);
+      const endpoints = await getUserEndpoints(user.id);
+      console.log('API /endpoints - Returning', endpoints.length, 'user endpoints');
       res.json(endpoints);
     } else {
       // Get anonymous endpoints from memory
-      res.json(Array.from(anonymousEndpoints.values()));
+      const anonymousEndpointsList = Array.from(anonymousEndpoints.values());
+      console.log('API /endpoints - Returning', anonymousEndpointsList.length, 'anonymous endpoints');
+      res.json(anonymousEndpointsList);
     }
   } catch (error) {
     console.error('Error fetching endpoints:', error);
@@ -343,15 +371,19 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
       requestCount: 0
     };
     
-    if (req.isAuthenticated()) {
+    const user = getAuthenticatedUser(req);
+    console.log('API POST /endpoints - User:', user ? user.username : 'anonymous');
+    
+    if (user) {
       // Save to database for authenticated users
       await createEndpoint({
         id: endpointId,
-        user_id: req.user.id,
+        user_id: user.id,
         name,
         path
       });
-      endpoint.user_id = req.user.id;
+      endpoint.user_id = user.id;
+      console.log('API POST /endpoints - Created endpoint for user:', user.username);
     } else {
       // Save to memory for anonymous users
       anonymousEndpoints.set(endpointId, endpoint);
@@ -409,13 +441,19 @@ app.delete('/api/endpoints/:id', optionalAuth, async (req, res) => {
 
 app.get('/api/requests', optionalAuth, async (req, res) => {
   try {
-    if (req.isAuthenticated()) {
+    const user = getAuthenticatedUser(req);
+    console.log('API /requests - User:', user ? user.username : 'anonymous');
+    
+    if (user) {
       // Get user's requests from database
-      const requests = await getUserRequests(req.user.id);
+      const requests = await getUserRequests(user.id);
+      console.log('API /requests - Returning', requests.length, 'user requests');
       res.json(requests);
     } else {
       // Get anonymous requests from memory
-      res.json(Array.from(anonymousRequests.values()));
+      const anonymousRequestsList = Array.from(anonymousRequests.values());
+      console.log('API /requests - Returning', anonymousRequestsList.length, 'anonymous requests');
+      res.json(anonymousRequestsList);
     }
   } catch (error) {
     console.error('Error fetching requests:', error);
