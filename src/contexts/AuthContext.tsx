@@ -109,17 +109,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
         body: JSON.stringify({ token: authToken }),
       })
       .then(response => response.json())
-      .then(data => {
+      .then(async (data) => {
         if (data.user) {
-          // Add a small delay to ensure migration is complete
-          setTimeout(() => {
-            setUser(data.user);
-            setLoading(false);
-          }, 1000);
+          // Check for anonymous endpoints to migrate
+          const anonymousEndpoints = localStorage.getItem('anonymous_endpoints');
+          if (anonymousEndpoints) {
+            try {
+              const endpointIds = JSON.parse(anonymousEndpoints);
+              
+              // Migrate endpoints to authenticated user
+              const migrateResponse = await fetch(`${BACKEND_URL}/auth/migrate-endpoints`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ endpointIds })
+              });
+              
+              if (migrateResponse.ok) {
+                // Clear anonymous endpoints from localStorage after successful migration
+                localStorage.removeItem('anonymous_endpoints');
+              }
+            } catch (error) {
+              console.error('Error migrating endpoints:', error);
+            }
+          }
+          
+          setUser(data.user);
         } else {
           localStorage.removeItem('auth_token');
-          setLoading(false);
         }
+        setLoading(false);
       })
       .catch(error => {
         console.error('Error validating token:', error);
