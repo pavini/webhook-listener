@@ -44,7 +44,7 @@ app.use(cors({
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
-  resave: false,
+  resave: true, // Force save to ensure persistence during OAuth flow
   saveUninitialized: true,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
@@ -123,11 +123,18 @@ app.get('/auth/github/callback',
       console.log('OAuth callback - Host:', req.headers.host);
       
       // Migrate anonymous endpoints to authenticated user
+      console.log('OAuth callback - Checking for anonymous endpoints to migrate');
+      console.log('OAuth callback - Session anonymousEndpoints:', req.session.anonymousEndpoints);
+      console.log('OAuth callback - Available anonymous endpoints:', Array.from(anonymousEndpoints.keys()));
+      
       if (req.session.anonymousEndpoints) {
         const endpointsToMigrate = JSON.parse(req.session.anonymousEndpoints);
+        console.log('OAuth callback - Migrating endpoints:', endpointsToMigrate);
         
         for (const endpointId of endpointsToMigrate) {
           const endpoint = anonymousEndpoints.get(endpointId);
+          console.log('OAuth callback - Migrating endpoint:', endpointId, endpoint ? 'found' : 'not found');
+          
           if (endpoint) {
             // Create endpoint in database for authenticated user
             await createEndpoint({
@@ -136,9 +143,12 @@ app.get('/auth/github/callback',
               name: endpoint.name,
               path: endpoint.path
             });
+            console.log('OAuth callback - Migrated endpoint to database:', endpoint.name);
             
             // Migrate requests
             const endpointRequests = Array.from(anonymousRequests.values()).filter(r => r.endpointId === endpointId);
+            console.log('OAuth callback - Migrating requests for endpoint:', endpointId, 'count:', endpointRequests.length);
+            
             for (const request of endpointRequests) {
               await createRequest({
                 id: request.id,
@@ -158,6 +168,9 @@ app.get('/auth/github/callback',
         
         // Clear session data
         delete req.session.anonymousEndpoints;
+        console.log('OAuth callback - Migration completed, cleared session data');
+      } else {
+        console.log('OAuth callback - No anonymous endpoints to migrate');
       }
     } catch (error) {
       console.error('Error migrating endpoints:', error);
@@ -168,7 +181,8 @@ app.get('/auth/github/callback',
     authTokens.set(authToken, {
       user: req.user,
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      migrationCompleted: true // Add migration status flag
     });
     
     console.log('OAuth callback - Created auth token:', authToken);
@@ -266,6 +280,20 @@ app.get('/auth/me', (req, res) => {
     });
   } else {
     res.json({ user: null });
+  }
+});
+
+// Check for pending anonymous endpoints
+app.get('/auth/pending-migration', (req, res) => {
+  if (req.session.anonymousEndpoints) {
+    const pendingEndpoints = JSON.parse(req.session.anonymousEndpoints);
+    res.json({ 
+      hasPendingMigration: true, 
+      pendingCount: pendingEndpoints.length,
+      endpointIds: pendingEndpoints
+    });
+  } else {
+    res.json({ hasPendingMigration: false, pendingCount: 0 });
   }
 });
 
@@ -395,6 +423,17 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
       const currentEndpoints = JSON.parse(req.session.anonymousEndpoints);
       currentEndpoints.push(endpointId);
       req.session.anonymousEndpoints = JSON.stringify(currentEndpoints);
+      
+      // Ensure session is saved
+      req.session.save((err) => {
+        if (err) {
+          console.error('Error saving session:', err);
+        } else {
+          console.log('Session saved with anonymous endpoint:', endpointId);
+          console.log('Session ID:', req.sessionID);
+          console.log('Session anonymousEndpoints:', req.session.anonymousEndpoints);
+        }
+      });
     }
     
     io.emit('endpoint_created', endpoint);

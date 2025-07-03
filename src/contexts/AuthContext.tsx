@@ -111,11 +111,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .then(response => response.json())
       .then(data => {
         if (data.user) {
-          setUser(data.user);
+          // Add a small delay to ensure migration is complete
+          setTimeout(() => {
+            setUser(data.user);
+            setLoading(false);
+          }, 1000);
         } else {
           localStorage.removeItem('auth_token');
+          setLoading(false);
         }
-        setLoading(false);
       })
       .catch(error => {
         console.error('Error validating token:', error);
