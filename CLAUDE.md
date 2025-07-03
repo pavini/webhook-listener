@@ -61,3 +61,10 @@ HookDebug is a React 18+ application built with Vite that allows developers to c
 - Focus on clean, maintainable code
 - Prioritize user experience and real-time functionality
 - Ensure proper error handling and edge cases
+
+## Commit Guidelines
+- NEVER reference AI assistance (Claude, AI, etc.) in commit messages
+- NEVER add "Co-Authored-By: Claude" or similar AI references
+- NEVER use AI-generated footers like "🤖 Generated with [Claude Code]"
+- Keep commit messages professional and focused on technical changes
+- Use conventional commit format when appropriate

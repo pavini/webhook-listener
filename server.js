@@ -87,7 +87,49 @@ app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] 
 
 app.get('/auth/github/callback', 
   passport.authenticate('github', { failureRedirect: process.env.FRONTEND_URL }),
-  (req, res) => {
+  async (req, res) => {
+    try {
+      // Migrate anonymous endpoints to authenticated user
+      if (req.session.anonymousEndpoints) {
+        const endpointsToMigrate = JSON.parse(req.session.anonymousEndpoints);
+        
+        for (const endpointId of endpointsToMigrate) {
+          const endpoint = anonymousEndpoints.get(endpointId);
+          if (endpoint) {
+            // Create endpoint in database for authenticated user
+            await createEndpoint({
+              id: endpoint.id,
+              user_id: req.user.id,
+              name: endpoint.name,
+              path: endpoint.path
+            });
+            
+            // Migrate requests
+            const endpointRequests = Array.from(anonymousRequests.values()).filter(r => r.endpointId === endpointId);
+            for (const request of endpointRequests) {
+              await createRequest({
+                id: request.id,
+                endpoint_id: endpointId,
+                method: request.method,
+                url: request.url,
+                headers: request.headers,
+                body: request.body
+              }).catch(err => console.error('Error migrating request:', err));
+            }
+            
+            // Remove from anonymous storage
+            anonymousEndpoints.delete(endpointId);
+            endpointRequests.forEach(r => anonymousRequests.delete(r.id));
+          }
+        }
+        
+        // Clear session data
+        delete req.session.anonymousEndpoints;
+      }
+    } catch (error) {
+      console.error('Error migrating endpoints:', error);
+    }
+    
     res.redirect(process.env.FRONTEND_URL);
   }
 );
@@ -223,6 +265,14 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
     } else {
       // Save to memory for anonymous users
       anonymousEndpoints.set(endpointId, endpoint);
+      
+      // Track anonymous endpoints in session for migration
+      if (!req.session.anonymousEndpoints) {
+        req.session.anonymousEndpoints = JSON.stringify([]);
+      }
+      const currentEndpoints = JSON.parse(req.session.anonymousEndpoints);
+      currentEndpoints.push(endpointId);
+      req.session.anonymousEndpoints = JSON.stringify(currentEndpoints);
     }
     
     io.emit('endpoint_created', endpoint);
@@ -247,6 +297,13 @@ app.delete('/api/endpoints/:id', optionalAuth, async (req, res) => {
         anonymousEndpoints.delete(id);
         const endpointRequests = Array.from(anonymousRequests.values()).filter(r => r.endpointId === id);
         endpointRequests.forEach(r => anonymousRequests.delete(r.id));
+        
+        // Remove from session tracking
+        if (req.session.anonymousEndpoints) {
+          const currentEndpoints = JSON.parse(req.session.anonymousEndpoints);
+          const updatedEndpoints = currentEndpoints.filter(epId => epId !== id);
+          req.session.anonymousEndpoints = JSON.stringify(updatedEndpoints);
+        }
       } else {
         return res.status(404).json({ message: 'Endpoint not found' });
       }
