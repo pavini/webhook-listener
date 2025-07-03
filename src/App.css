@@ -38,7 +38,6 @@
 .app-header h1 .logo {
   height: 2.5rem;
   width: auto;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   display: inline-block;
   vertical-align: middle;
 }
