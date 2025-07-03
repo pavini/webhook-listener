@@ -36,8 +36,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuth = async () => {
     try {
+      // Check for auth token in localStorage
+      const authToken = localStorage.getItem('auth_token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (authToken) {
+        headers.authorization = `Bearer ${authToken}`;
+      }
+      
       const response = await fetch(`${BACKEND_URL}/auth/me`, {
         credentials: 'include',
+        headers,
       });
       
       if (response.ok) {
@@ -45,6 +56,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(data.user);
       } else {
         setUser(null);
+        // Clear invalid token
+        if (authToken) {
+          localStorage.removeItem('auth_token');
+        }
       }
     } catch (error) {
       console.error('Error checking auth:', error);
@@ -64,6 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         method: 'POST',
         credentials: 'include',
       });
+      localStorage.removeItem('auth_token');
       setUser(null);
     } catch (error) {
       console.error('Error logging out:', error);
@@ -75,7 +91,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   useEffect(() => {
-    checkAuth();
+    // Check for auth token in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const authToken = urlParams.get('auth_token');
+    
+    if (authToken) {
+      // Store token and remove from URL
+      localStorage.setItem('auth_token', authToken);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Validate token with backend
+      fetch(`${BACKEND_URL}/auth/validate-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: authToken }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          localStorage.removeItem('auth_token');
+        }
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error validating token:', error);
+        localStorage.removeItem('auth_token');
+        setLoading(false);
+      });
+    } else {
+      checkAuth();
+    }
   }, []);
 
   return (

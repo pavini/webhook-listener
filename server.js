@@ -85,6 +85,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const anonymousEndpoints = new Map();
 const anonymousRequests = new Map();
 
+// In-memory storage for auth tokens (production should use Redis)
+const authTokens = new Map();
+
 // Authentication routes
 app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
 
@@ -139,20 +142,19 @@ app.get('/auth/github/callback',
       console.error('Error migrating endpoints:', error);
     }
     
-    // Ensure session is saved before redirect
-    req.session.save((err) => {
-      if (err) {
-        console.error('Error saving session:', err);
-      }
-      console.log('OAuth callback - Session saved, redirecting to:', process.env.FRONTEND_URL);
-      
-      // Create a temporary token to allow frontend to establish session
-      const tempToken = uuidv4();
-      req.session.tempToken = tempToken;
-      
-      // Redirect with token to allow frontend to establish session
-      res.redirect(`${process.env.FRONTEND_URL}?auth_token=${tempToken}`);
+    // Create persistent auth token
+    const authToken = uuidv4();
+    authTokens.set(authToken, {
+      user: req.user,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     });
+    
+    console.log('OAuth callback - Created auth token:', authToken);
+    console.log('OAuth callback - Stored user:', req.user.username);
+    
+    // Redirect with token
+    res.redirect(`${process.env.FRONTEND_URL}?auth_token=${authToken}`);
   }
 );
 
@@ -169,35 +171,37 @@ app.post('/auth/logout', (req, res) => {
 app.post('/auth/validate-token', (req, res) => {
   const { token } = req.body;
   console.log('Token validation - Token:', token);
-  console.log('Token validation - Session ID:', req.sessionID);
   
   if (!token) {
     return res.status(400).json({ error: 'Token required' });
   }
   
-  if (req.session.tempToken === token) {
-    // Token is valid, clear it and establish session
-    delete req.session.tempToken;
-    console.log('Token validation - Valid token, session established');
-    
-    if (req.isAuthenticated()) {
-      res.json({
-        user: {
-          id: req.user.id,
-          username: req.user.username,
-          display_name: req.user.display_name,
-          avatar_url: req.user.avatar_url
-        }
-      });
-    } else {
-      res.json({ user: null });
-    }
-  } else {
+  const authData = authTokens.get(token);
+  
+  if (!authData) {
     console.log('Token validation - Invalid token');
-    res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ error: 'Invalid token' });
   }
+  
+  if (authData.expiresAt < new Date()) {
+    console.log('Token validation - Expired token');
+    authTokens.delete(token);
+    return res.status(401).json({ error: 'Token expired' });
+  }
+  
+  console.log('Token validation - Valid token for user:', authData.user.username);
+  
+  res.json({
+    user: {
+      id: authData.user.id,
+      username: authData.user.username,
+      display_name: authData.user.display_name,
+      avatar_url: authData.user.avatar_url
+    }
+  });
 });
 
+// Token-based authentication check
 app.get('/auth/me', (req, res) => {
   console.log('Auth check - Session ID:', req.sessionID);
   console.log('Auth check - Is authenticated:', req.isAuthenticated());
@@ -206,6 +210,30 @@ app.get('/auth/me', (req, res) => {
   console.log('Auth check - Host:', req.headers.host);
   console.log('Auth check - Origin:', req.headers.origin);
   
+  // Check for token in headers
+  const authToken = req.headers.authorization?.replace('Bearer ', '');
+  console.log('Auth check - Token:', authToken);
+  
+  if (authToken) {
+    const authData = authTokens.get(authToken);
+    
+    if (authData && authData.expiresAt > new Date()) {
+      console.log('Auth check - Valid token for user:', authData.user.username);
+      return res.json({
+        user: {
+          id: authData.user.id,
+          username: authData.user.username,
+          display_name: authData.user.display_name,
+          avatar_url: authData.user.avatar_url
+        }
+      });
+    } else {
+      console.log('Auth check - Invalid or expired token');
+      if (authData) authTokens.delete(authToken);
+    }
+  }
+  
+  // Fallback to session-based auth
   if (req.isAuthenticated()) {
     res.json({
       user: {
