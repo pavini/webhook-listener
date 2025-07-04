@@ -79,8 +79,8 @@ function App() {
           // Loaded requests: ${requestsData.length}
           setRequests(requestsData);
         }
-      } catch (error) {
-        // Error loading initial data: ${error}
+      } catch {
+        // Error loading initial data
       }
     };
 
@@ -125,8 +125,8 @@ function App() {
         // Failed to create endpoint
       }
       // Note: Don't add to state here - the WebSocket will handle it
-    } catch (error) {
-      // Error creating endpoint: ${error}
+    } catch {
+      // Error creating endpoint
     }
   };
 
@@ -153,8 +153,8 @@ function App() {
       } else {
         // Failed to delete endpoint from backend
       }
-    } catch (error) {
-      // Error deleting endpoint: ${error}
+    } catch {
+      // Error deleting endpoint
     }
   };
 
