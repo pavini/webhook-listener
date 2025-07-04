@@ -1,0 +1,64 @@
+# Multi-stage production Dockerfile for HookDebug
+# Stage 1: Build the React frontend
+FROM node:22-alpine AS frontend-build
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production=false
+
+# Copy source code
+COPY . .
+
+# Build the frontend
+RUN npm run build
+
+# Stage 2: Setup the production runtime
+FROM node:22-alpine AS production
+
+# Install runtime dependencies
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copy package files for backend dependencies
+COPY package*.json ./
+
+# Install only production dependencies and rebuild sqlite3
+RUN npm ci --only=production && npm rebuild sqlite3
+
+# Copy built frontend from previous stage
+COPY --from=frontend-build /app/dist ./dist
+
+# Copy backend files
+COPY server.js ./
+COPY database.js ./
+COPY auth.js ./
+COPY data/ ./data/
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S hookdebug -u 1001
+
+# Change ownership of the app directory
+RUN chown -R hookdebug:nodejs /app
+USER hookdebug
+
+# Expose port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
+
+# Use production environment
+ENV NODE_ENV=production
+
+# Start the application
+CMD ["npm", "run", "server"]

@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  hookdebug:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Optional: Add volume for persistent data
+    volumes:
+      - ./data:/app/data
+    # Optional: Add logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
