@@ -24,6 +24,9 @@ HookDebug is a React 18+ application built with Vite that allows developers to c
 - Follow React 18+ patterns and best practices
 - Implement proper error handling
 - Use modern JavaScript/TypeScript features
+- **ALWAYS run `npm run lint` before committing code changes**
+- **ALWAYS run `npm run typecheck` to verify TypeScript compilation**
+- Fix all ESLint errors and warnings before submitting PRs
 
 ### Project Structure
 - Keep components modular and reusable
