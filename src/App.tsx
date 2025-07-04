@@ -19,7 +19,7 @@ function App() {
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const { connected, subscribeToRequests, subscribeToEndpoints } = useSocket();
   const { user } = useAuth();
-  const { addAnonymousEndpoint, removeAnonymousEndpoint } = useAnonymousEndpoints();
+  const { addAnonymousEndpoint, removeAnonymousEndpoint, getAnonymousEndpoints } = useAnonymousEndpoints();
 
   // Clear data when user logs out
   useEffect(() => {
