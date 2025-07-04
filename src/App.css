@@ -203,8 +203,16 @@
   border-radius: 8px;
   margin-bottom: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   background-color: var(--bg-primary);
+}
+
+.endpoint-item {
+  animation: slideInFromLeft 0.5s ease-out;
+}
+
+.request-item {
+  animation: slideInFromRight 0.4s ease-out;
 }
 
 .endpoint-list li:hover,
@@ -282,6 +290,101 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateX(10px); }
   to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes newEndpointPulse {
+  0% {
+    background-color: var(--bg-primary);
+    border-color: var(--border-subtle);
+    transform: scale(1);
+  }
+  25% {
+    background-color: rgba(189, 147, 249, 0.2);
+    border-color: var(--accent-purple);
+    transform: scale(1.03);
+  }
+  50% {
+    background-color: rgba(189, 147, 249, 0.4);
+    border-color: var(--accent-purple);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(189, 147, 249, 0.3);
+  }
+  75% {
+    background-color: rgba(189, 147, 249, 0.2);
+    border-color: var(--accent-purple);
+    transform: scale(1.03);
+  }
+  100% {
+    background-color: var(--bg-primary);
+    border-color: var(--border-subtle);
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+@keyframes newRequestFlash {
+  0% {
+    background-color: var(--bg-primary);
+    border-color: var(--border-subtle);
+    transform: scale(1);
+  }
+  20% {
+    background-color: rgba(139, 233, 253, 0.3);
+    border-color: var(--accent-cyan);
+    transform: scale(1.02);
+  }
+  40% {
+    background-color: rgba(139, 233, 253, 0.5);
+    border-color: var(--accent-cyan);
+    transform: scale(1.04);
+    box-shadow: 0 0 15px rgba(139, 233, 253, 0.4);
+  }
+  60% {
+    background-color: rgba(139, 233, 253, 0.3);
+    border-color: var(--accent-cyan);
+    transform: scale(1.02);
+  }
+  80% {
+    background-color: rgba(139, 233, 253, 0.1);
+    border-color: var(--accent-cyan);
+    transform: scale(1.01);
+  }
+  100% {
+    background-color: var(--bg-primary);
+    border-color: var(--border-subtle);
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+.endpoint-new {
+  animation: newEndpointPulse 0.8s ease-out !important;
+}
+
+.request-new {
+  animation: newRequestFlash 1.2s ease-out !important;
 }
 
 .copy-btn {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useLayoutEffect, useRef } from 'react';
 import { Endpoint } from '../types';
 import { BACKEND_URL } from '../config';
 
@@ -16,6 +16,27 @@ export const EndpointList = ({
   onDeleteEndpoint,
 }: EndpointListProps) => {
   const [copiedEndpoints, setCopiedEndpoints] = useState<Set<string>>(new Set());
+  const [newEndpoints, setNewEndpoints] = useState<Set<string>>(new Set());
+  const prevEndpointsRef = useRef<string[]>([]);
+
+  useLayoutEffect(() => {
+    const currentIds = endpoints.map(e => e.id);
+    const previousIds = prevEndpointsRef.current;
+    
+    const newIds = currentIds.filter(id => !previousIds.includes(id));
+    
+    if (newIds.length > 0) {
+      setNewEndpoints(new Set(newIds));
+      
+      const timer = setTimeout(() => {
+        setNewEndpoints(new Set());
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    prevEndpointsRef.current = currentIds;
+  }, [endpoints]);
 
   const handleCopyUrl = async (endpoint: Endpoint, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -46,7 +67,7 @@ export const EndpointList = ({
           {endpoints.map((endpoint) => (
             <li
               key={endpoint.id}
-              className={selectedEndpoint === endpoint.id ? 'selected' : ''}
+              className={`endpoint-item ${selectedEndpoint === endpoint.id ? 'selected' : ''} ${newEndpoints.has(endpoint.id) ? 'endpoint-new' : ''}`}
               onClick={() => onSelectEndpoint(endpoint.id)}
             >
               <div className="endpoint-header">
