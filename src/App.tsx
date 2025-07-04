@@ -120,17 +120,31 @@ function App() {
     }
   };
 
-  const handleDeleteEndpoint = (endpointId: string) => {
-    setEndpoints(prev => prev.filter(endpoint => endpoint.id !== endpointId));
-    setRequests(prev => prev.filter(request => request.endpointId !== endpointId));
-    if (selectedEndpoint === endpointId) {
-      setSelectedEndpoint(null);
-      setSelectedRequest(null);
-    }
-    
-    // Remove from anonymous tracking if user is not logged in
-    if (!user) {
-      removeAnonymousEndpoint(endpointId);
+  const handleDeleteEndpoint = async (endpointId: string) => {
+    try {
+      // Delete from backend
+      const response = await makeAuthenticatedRequest(`${BACKEND_URL}/api/endpoints/${endpointId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Only update local state if backend deletion succeeded
+        setEndpoints(prev => prev.filter(endpoint => endpoint.id !== endpointId));
+        setRequests(prev => prev.filter(request => request.endpointId !== endpointId));
+        if (selectedEndpoint === endpointId) {
+          setSelectedEndpoint(null);
+          setSelectedRequest(null);
+        }
+        
+        // Remove from anonymous tracking if user is not logged in
+        if (!user) {
+          removeAnonymousEndpoint(endpointId);
+        }
+      } else {
+        console.error('Failed to delete endpoint from backend');
+      }
+    } catch (error) {
+      console.error('Error deleting endpoint:', error);
     }
   };
 
