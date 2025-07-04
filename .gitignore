@@ -24,6 +24,9 @@ dist-ssr
 *.db-journal
 data/
 
+# Lighthouse CI results
+.lighthouseci/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

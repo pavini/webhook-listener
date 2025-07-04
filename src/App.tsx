@@ -19,12 +19,12 @@ function App() {
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const { connected, subscribeToRequests, subscribeToEndpoints } = useSocket();
   const { user } = useAuth();
-  const { addAnonymousEndpoint, removeAnonymousEndpoint } = useAnonymousEndpoints();
+  const { addAnonymousEndpoint, removeAnonymousEndpoint, getAnonymousEndpoints } = useAnonymousEndpoints();
 
   // Clear data when user logs out
   useEffect(() => {
     if (!user) {
-      console.log('User logged out, clearing authenticated data');
+      // User logged out, clearing authenticated data
       // Keep endpoints and requests as they will be reloaded for anonymous user
     }
   }, [user]);
@@ -52,13 +52,23 @@ function App() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        console.log('Loading initial data for user:', user ? user.username : 'anonymous');
+        // Loading initial data for user: ${user ? user.username : 'anonymous'}
         
         // Load endpoints
-        const endpointsResponse = await makeAuthenticatedRequest(`${BACKEND_URL}/api/endpoints`);
+        let endpointsUrl = `${BACKEND_URL}/api/endpoints`;
+        
+        // For anonymous users, include localStorage-tracked endpoint IDs
+        if (!user) {
+          const anonymousEndpointIds = getAnonymousEndpoints();
+          if (anonymousEndpointIds.length > 0) {
+            endpointsUrl += `?endpointIds=${encodeURIComponent(JSON.stringify(anonymousEndpointIds))}`;
+          }
+        }
+        
+        const endpointsResponse = await makeAuthenticatedRequest(endpointsUrl);
         if (endpointsResponse.ok) {
           const endpointsData = await endpointsResponse.json();
-          console.log('Loaded endpoints:', endpointsData.length);
+          // Loaded endpoints: ${endpointsData.length}
           setEndpoints(endpointsData);
         }
 
@@ -66,16 +76,16 @@ function App() {
         const requestsResponse = await makeAuthenticatedRequest(`${BACKEND_URL}/api/requests`);
         if (requestsResponse.ok) {
           const requestsData = await requestsResponse.json();
-          console.log('Loaded requests:', requestsData.length);
+          // Loaded requests: ${requestsData.length}
           setRequests(requestsData);
         }
-      } catch (error) {
-        console.error('Error loading initial data:', error);
+      } catch {
+        // Error loading initial data
       }
     };
 
     loadInitialData();
-  }, [user]);
+  }, [user, getAnonymousEndpoints]);
 
   useEffect(() => {
     const unsubscribeRequests = subscribeToRequests((request: HttpRequest) => {
@@ -104,7 +114,7 @@ function App() {
 
   const handleCreateEndpoint = async (name: string) => {
     try {
-      console.log('Creating endpoint:', name, 'for user:', user ? user.username : 'anonymous');
+      // Creating endpoint: ${name} for user: ${user ? user.username : 'anonymous'}
       
       const response = await makeAuthenticatedRequest(`${BACKEND_URL}/api/endpoints`, {
         method: 'POST',
@@ -112,11 +122,11 @@ function App() {
       });
       
       if (!response.ok) {
-        console.error('Failed to create endpoint');
+        // Failed to create endpoint
       }
       // Note: Don't add to state here - the WebSocket will handle it
-    } catch (error) {
-      console.error('Error creating endpoint:', error);
+    } catch {
+      // Error creating endpoint
     }
   };
 
@@ -141,10 +151,10 @@ function App() {
           removeAnonymousEndpoint(endpointId);
         }
       } else {
-        console.error('Failed to delete endpoint from backend');
+        // Failed to delete endpoint from backend
       }
-    } catch (error) {
-      console.error('Error deleting endpoint:', error);
+    } catch {
+      // Error deleting endpoint
     }
   };
 

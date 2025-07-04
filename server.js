@@ -339,8 +339,25 @@ app.get('/api/endpoints', optionalAuth, async (req, res) => {
       const endpoints = await getUserEndpoints(user.id);
       res.json(endpoints);
     } else {
-      // Get anonymous endpoints from memory
-      const anonymousEndpointsList = Array.from(anonymousEndpoints.values());
+      // Get anonymous endpoints from memory, filtered by client's tracking
+      const clientEndpointIds = req.query.endpointIds;
+      let anonymousEndpointsList = Array.from(anonymousEndpoints.values());
+      
+      // Filter by client's localStorage tracking if provided
+      if (clientEndpointIds) {
+        try {
+          const endpointIds = JSON.parse(clientEndpointIds);
+          if (Array.isArray(endpointIds)) {
+            anonymousEndpointsList = anonymousEndpointsList.filter(endpoint => 
+              endpointIds.includes(endpoint.id)
+            );
+          }
+        } catch (error) {
+          console.error('Error parsing client endpoint IDs:', error);
+          // If parsing fails, return all endpoints (fallback behavior)
+        }
+      }
+      
       res.json(anonymousEndpointsList);
     }
   } catch (error) {

@@ -11,5 +11,13 @@ export default defineConfig({
   build: {
     minify: 'esbuild',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          socket: ['socket.io-client']
+        }
+      }
+    }
   }
 })

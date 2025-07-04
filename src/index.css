@@ -3,13 +3,13 @@
   line-height: 1.5;
   font-weight: 400;
 
-  /* Dracula Theme Colors */
+  /* Dracula Theme Colors - Improved contrast */
   --bg-primary: #282a36;
   --bg-secondary: #44475a;
   --bg-tertiary: #3b4048;
   --fg-primary: #f8f8f2;
-  --fg-secondary: #6272a4;
-  --fg-muted: #6272a4;
+  --fg-secondary: #8be9fd;
+  --fg-muted: #bd93f9;
   --accent-purple: #bd93f9;
   --accent-pink: #ff79c6;
   --accent-cyan: #8be9fd;
