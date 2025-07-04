@@ -21,16 +21,19 @@ export const RequestList = ({
     const currentIds = requests.map(r => r.id);
     const previousIds = prevRequestsRef.current;
     
-    const newIds = currentIds.filter(id => !previousIds.includes(id));
-    
-    if (newIds.length > 0) {
-      setNewRequests(new Set(newIds));
+    // Only detect new items if we have previous data (avoid initial load animation)
+    if (previousIds.length > 0) {
+      const newIds = currentIds.filter(id => !previousIds.includes(id));
       
-      const timer = setTimeout(() => {
-        setNewRequests(new Set());
-      }, 1200);
-      
-      return () => clearTimeout(timer);
+      if (newIds.length > 0) {
+        setNewRequests(new Set(newIds));
+        
+        const timer = setTimeout(() => {
+          setNewRequests(new Set());
+        }, 1200);
+        
+        return () => clearTimeout(timer);
+      }
     }
     
     prevRequestsRef.current = currentIds;

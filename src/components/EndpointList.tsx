@@ -23,16 +23,19 @@ export const EndpointList = ({
     const currentIds = endpoints.map(e => e.id);
     const previousIds = prevEndpointsRef.current;
     
-    const newIds = currentIds.filter(id => !previousIds.includes(id));
-    
-    if (newIds.length > 0) {
-      setNewEndpoints(new Set(newIds));
+    // Only detect new items if we have previous data (avoid initial load animation)
+    if (previousIds.length > 0) {
+      const newIds = currentIds.filter(id => !previousIds.includes(id));
       
-      const timer = setTimeout(() => {
-        setNewEndpoints(new Set());
-      }, 800);
-      
-      return () => clearTimeout(timer);
+      if (newIds.length > 0) {
+        setNewEndpoints(new Set(newIds));
+        
+        const timer = setTimeout(() => {
+          setNewEndpoints(new Set());
+        }, 800);
+        
+        return () => clearTimeout(timer);
+      }
     }
     
     prevEndpointsRef.current = currentIds;
