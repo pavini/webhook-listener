@@ -6,6 +6,8 @@ const Logo: React.FC = () => {
       src="/logo.png" 
       alt="HookDebug Logo" 
       className="logo"
+      width="40"
+      height="40"
       style={{ height: '2.5rem', width: 'auto' }}
     />
   );
