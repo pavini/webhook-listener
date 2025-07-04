@@ -28,10 +28,20 @@ export const EndpointList = ({
       const newIds = currentIds.filter(id => !previousIds.includes(id));
       
       if (newIds.length > 0) {
-        setNewEndpoints(new Set(newIds));
+        // Only set the truly new endpoints, don't replace the entire set
+        setNewEndpoints(prev => {
+          const updated = new Set(prev);
+          newIds.forEach(id => updated.add(id));
+          return updated;
+        });
         
+        // Clear the animation for these specific new endpoints
         const timer = setTimeout(() => {
-          setNewEndpoints(new Set());
+          setNewEndpoints(prev => {
+            const updated = new Set(prev);
+            newIds.forEach(id => updated.delete(id));
+            return updated;
+          });
         }, 800);
         
         return () => clearTimeout(timer);
@@ -60,6 +70,11 @@ export const EndpointList = ({
     }
   };
 
+  // Sort endpoints by creation date (newest first)
+  const sortedEndpoints = [...endpoints].sort((a, b) => 
+    new Date(b.created).getTime() - new Date(a.created).getTime()
+  );
+
   return (
     <div className="endpoint-list">
       <h2>Endpoints</h2>
@@ -67,7 +82,7 @@ export const EndpointList = ({
         <p>No endpoints created yet.</p>
       ) : (
         <ul>
-          {endpoints.map((endpoint) => (
+          {sortedEndpoints.map((endpoint) => (
             <li
               key={endpoint.id}
               className={`endpoint-item ${selectedEndpoint === endpoint.id ? 'selected' : ''} ${newEndpoints.has(endpoint.id) ? 'endpoint-new' : ''}`}
@@ -95,9 +110,19 @@ export const EndpointList = ({
                   <span>{BACKEND_URL}/{endpoint.path}</span>
                   {copiedEndpoints.has(endpoint.id) && <span className="copied-indicator">✓ Copied!</span>}
                 </div>
-                <span className="request-count">
-                  {endpoint.requestCount} requests
-                </span>
+                <div className="endpoint-meta">
+                  <span className="request-count">
+                    {endpoint.requestCount} requests
+                  </span>
+                  <span className="creation-date">
+                    Created: {new Date(endpoint.created).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
               </div>
             </li>
           ))}

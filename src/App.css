@@ -410,10 +410,25 @@
   background-color: var(--accent-green);
 }
 
+.endpoint-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .request-count {
   font-size: 0.8rem;
   color: var(--fg-muted);
   font-weight: 500;
+}
+
+.creation-date {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  font-weight: 400;
+  font-style: italic;
 }
 
 .delete-btn {
