@@ -105,13 +105,13 @@ jobs:
           context: .
           file: ./Dockerfile.production
           push: false
-          tags: hookdebug:prod
+          tags: hookdebug:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           
       - name: Test Docker image
         run: |
-          docker run -d --name hookdebug-test -p 3001:3001 hookdebug:prod
+          docker run -d --name hookdebug-test -p 3001:3001 hookdebug:latest
           sleep 10
           curl -f http://localhost:3001/health || exit 1
           docker stop hookdebug-test
