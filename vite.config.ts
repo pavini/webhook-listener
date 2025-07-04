@@ -8,4 +8,8 @@ export default defineConfig({
     allowedHosts: ['hookdebug.com'],
   },
   assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg'],
+  build: {
+    minify: 'esbuild',
+    sourcemap: true,
+  }
 })
