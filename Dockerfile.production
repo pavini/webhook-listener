@@ -40,7 +40,8 @@ COPY --from=frontend-build /app/dist ./dist
 COPY server.js ./
 COPY database.js ./
 COPY auth.js ./
-COPY data/ ./data/
+# Create data directory (database will be created at runtime)
+RUN mkdir -p ./data
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
