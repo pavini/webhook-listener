@@ -1,3 +1,4 @@
+import { useState, useLayoutEffect, useRef } from 'react';
 import { HttpRequest } from '../types';
 
 interface RequestListProps {
@@ -13,6 +14,27 @@ export const RequestList = ({
   onSelectRequest,
   onDeleteRequest,
 }: RequestListProps) => {
+  const [newRequests, setNewRequests] = useState<Set<string>>(new Set());
+  const prevRequestsRef = useRef<string[]>([]);
+
+  useLayoutEffect(() => {
+    const currentIds = requests.map(r => r.id);
+    const previousIds = prevRequestsRef.current;
+    
+    const newIds = currentIds.filter(id => !previousIds.includes(id));
+    
+    if (newIds.length > 0) {
+      setNewRequests(new Set(newIds));
+      
+      const timer = setTimeout(() => {
+        setNewRequests(new Set());
+      }, 1200);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    prevRequestsRef.current = currentIds;
+  }, [requests]);
   return (
     <div className="request-list">
       <h2>Requests</h2>
@@ -23,7 +45,7 @@ export const RequestList = ({
           {requests.map((request) => (
             <li
               key={request.id}
-              className={selectedRequest === request.id ? 'selected' : ''}
+              className={`request-item ${selectedRequest === request.id ? 'selected' : ''} ${newRequests.has(request.id) ? 'request-new' : ''}`}
               onClick={() => onSelectRequest(request.id)}
             >
               <div className="request-header">
