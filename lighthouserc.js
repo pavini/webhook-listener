@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   ci: {
     collect: {
       // Collect performance metrics from the built static files
