@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { HttpRequest, Endpoint } from './types';
 import { useSocket } from './hooks/useSocket';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { useAnonymousEndpoints } from './hooks/useAnonymousEndpoints';
 import { BACKEND_URL } from './config';
 import { EndpointList } from './components/EndpointList';
@@ -100,7 +100,7 @@ function App() {
       unsubscribeRequests?.();
       unsubscribeEndpoints?.();
     };
-  }, [subscribeToRequests, subscribeToEndpoints]);
+  }, [subscribeToRequests, subscribeToEndpoints, user, addAnonymousEndpoint]);
 
   const handleCreateEndpoint = async (name: string) => {
     try {
