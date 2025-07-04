@@ -15,7 +15,7 @@
     "start:dev": "concurrently \"npm run server:dev\" \"npm run dev -- --host 0.0.0.0\"",
     "build:analyze": "vite build --reportCompressedSize",
     "build:size": "npm run build && ls -la dist/assets/ && echo 'Bundle size check complete'",
-    "performance:audit": "echo 'Performance audit placeholder - install lighthouse-ci if needed'"
+    "performance:audit": "lhci autorun"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
+    "@lhci/cli": "^0.15.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
