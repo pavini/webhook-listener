@@ -12,7 +12,10 @@
     "server": "node server.js",
     "server:dev": "nodemon server.js",
     "start": "concurrently \"npm run server\" \"npm run dev -- --host 0.0.0.0\"",
-    "start:dev": "concurrently \"npm run server:dev\" \"npm run dev -- --host 0.0.0.0\""
+    "start:dev": "concurrently \"npm run server:dev\" \"npm run dev -- --host 0.0.0.0\"",
+    "build:analyze": "vite build --reportCompressedSize",
+    "build:size": "npm run build && ls -la dist/assets/ && echo 'Bundle size check complete'",
+    "performance:audit": "echo 'Performance audit placeholder - install lighthouse-ci if needed'"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
