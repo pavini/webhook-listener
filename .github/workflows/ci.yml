@@ -111,7 +111,7 @@ jobs:
           
       - name: Test Docker image
         run: |
-          docker run -d --name hookdebug-test -p 3001:3001 hookdebug:latest
+          docker run -d --name hookdebug-test -p 3001:3001 pavini/hookdebug:latest
           sleep 10
           curl -f http://localhost:3001/health || exit 1
           docker stop hookdebug-test
