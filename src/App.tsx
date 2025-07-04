@@ -55,7 +55,17 @@ function App() {
         console.log('Loading initial data for user:', user ? user.username : 'anonymous');
         
         // Load endpoints
-        const endpointsResponse = await makeAuthenticatedRequest(`${BACKEND_URL}/api/endpoints`);
+        let endpointsUrl = `${BACKEND_URL}/api/endpoints`;
+        
+        // For anonymous users, include localStorage-tracked endpoint IDs
+        if (!user) {
+          const anonymousEndpointIds = getAnonymousEndpoints();
+          if (anonymousEndpointIds.length > 0) {
+            endpointsUrl += `?endpointIds=${encodeURIComponent(JSON.stringify(anonymousEndpointIds))}`;
+          }
+        }
+        
+        const endpointsResponse = await makeAuthenticatedRequest(endpointsUrl);
         if (endpointsResponse.ok) {
           const endpointsData = await endpointsResponse.json();
           console.log('Loaded endpoints:', endpointsData.length);
@@ -75,7 +85,7 @@ function App() {
     };
 
     loadInitialData();
-  }, [user]);
+  }, [user, getAnonymousEndpoints]);
 
   useEffect(() => {
     const unsubscribeRequests = subscribeToRequests((request: HttpRequest) => {
