@@ -27,7 +27,8 @@ export const EndpointList = ({
     if (previousIds.length > 0) {
       const newIds = currentIds.filter(id => !previousIds.includes(id));
       
-      if (newIds.length > 0) {
+      // Only animate if we have truly new endpoints (not a full reload)
+      if (newIds.length > 0 && newIds.length < currentIds.length) {
         // Only set the truly new endpoints, don't replace the entire set
         setNewEndpoints(prev => {
           const updated = new Set(prev);
