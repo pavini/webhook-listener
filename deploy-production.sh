@@ -7,9 +7,9 @@ set -e
 
 echo "🚀 Starting HookDebug production deployment..."
 
-# Generate unique build timestamp
-export BUILD_TIMESTAMP=$(date +%s)
-echo "📅 Build timestamp: $BUILD_TIMESTAMP"
+# Generate unique cache bust value
+export CACHE_BUST=$(date +%s)
+echo "📅 Cache bust value: $CACHE_BUST"
 
 # Stop any running containers
 echo "🛑 Stopping existing containers..."
@@ -23,12 +23,12 @@ docker rmi $(docker images -q hookdebug* 2>/dev/null) 2>/dev/null || true
 echo "🗑️  Pruning Docker build cache..."
 docker builder prune -f
 
-# Build and start with timestamp
+# Build and start with cache bust
 echo "🔨 Building fresh production image..."
-BUILD_TIMESTAMP=$BUILD_TIMESTAMP docker-compose -f docker-compose.production.yml build --no-cache
+CACHE_BUST=$CACHE_BUST docker-compose -f docker-compose.production.yml build --no-cache
 
 echo "🚀 Starting production container..."
-BUILD_TIMESTAMP=$BUILD_TIMESTAMP docker-compose -f docker-compose.production.yml up -d
+CACHE_BUST=$CACHE_BUST docker-compose -f docker-compose.production.yml up -d
 
 # Wait for health check
 echo "🔍 Waiting for application to be healthy..."
@@ -41,7 +41,7 @@ if docker-compose -f docker-compose.production.yml ps | grep -q "Up"; then
     echo "📊 Build info available at: http://localhost:3001/build-info"
     
     # Show build timestamp in container
-    echo "🔖 Build timestamp in container:"
+    echo "🔖 Build info in container:"
     docker-compose -f docker-compose.production.yml exec hookdebug cat /app/build-info.txt 2>/dev/null || echo "Build info not available yet"
 else
     echo "❌ Deployment failed! Check logs:"

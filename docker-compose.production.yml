@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile.production
       no_cache: true
+      args:
+        CACHE_BUST: ${CACHE_BUST:-$(date +%s)}
     ports:
       - "3001:3001"
     environment:
