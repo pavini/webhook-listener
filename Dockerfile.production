@@ -7,14 +7,20 @@ WORKDIR /app
 # Install build dependencies
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
+# Copy package files first for better layer caching
 COPY package*.json ./
 
 # Install dependencies
 RUN npm ci --only=production=false
 
-# Copy source code
+# Copy source code (this layer will be invalidated on any code change)
 COPY . .
+
+# Generate unique build timestamp to bust cache on every build
+RUN BUILD_TIMESTAMP=$(date +%s) && \
+    echo "Build timestamp: $BUILD_TIMESTAMP" > /app/build-info.txt && \
+    echo "Build date: $(date -u)" >> /app/build-info.txt && \
+    echo "Git commit: $(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')" >> /app/build-info.txt
 
 # Build the frontend
 RUN npm run build
@@ -23,7 +29,7 @@ RUN npm run build
 FROM node:22-alpine AS production
 
 # Install runtime dependencies
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ curl
 
 WORKDIR /app
 
@@ -36,10 +42,18 @@ RUN npm ci --only=production && npm rebuild sqlite3
 # Copy built frontend from previous stage
 COPY --from=frontend-build /app/dist ./dist
 
+# Copy build info for verification
+COPY --from=frontend-build /app/build-info.txt ./
+
 # Copy backend files
 COPY server.js ./
 COPY database.js ./
 COPY auth.js ./
+
+# Add production stage timestamp
+RUN echo "Production stage timestamp: $(date +%s)" >> /app/build-info.txt && \
+    echo "Production stage date: $(date -u)" >> /app/build-info.txt
+
 # Create data directory (database will be created at runtime)
 RUN mkdir -p ./data
 
