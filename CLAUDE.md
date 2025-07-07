@@ -16,6 +16,7 @@ HookDebug is a React 18+ application built with Vite that allows developers to c
 - NEVER run tests locally on the development machine
 - **CRITICAL**: When testing the application, ALWAYS use Docker or Docker Compose
 - NEVER run the application locally for testing purposes
+- **NEVER run the application to test unless explicitly requested by the user**
 - Use the provided Docker configuration for consistent testing environments
 - This ensures consistent behavior across different development environments
 
