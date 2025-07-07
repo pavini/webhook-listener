@@ -17,6 +17,7 @@ function App() {
   const [requests, setRequests] = useState<HttpRequest[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+  const [newEndpointId, setNewEndpointId] = useState<string | null>(null);
   const { connected, subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion } = useSocket();
   const { user } = useAuth();
   useAnonymousSession(); // Initialize anonymous session
@@ -60,7 +61,6 @@ function App() {
         const endpointsResponse = await makeAuthenticatedRequest(endpointsUrl);
         if (endpointsResponse.ok) {
           const endpointsData = await endpointsResponse.json();
-          // Loaded endpoints: ${endpointsData.length}
           setEndpoints(endpointsData);
         }
 
@@ -93,9 +93,19 @@ function App() {
       setEndpoints(prev => {
         // Check if endpoint already exists to avoid duplicates
         const exists = prev.some(ep => ep.id === endpoint.id);
+        
         if (exists) {
           return prev;
         }
+        
+        // Set this endpoint for animation
+        setNewEndpointId(endpoint.id);
+        
+        // Clear the animation flag after a short delay
+        setTimeout(() => {
+          setNewEndpointId(null);
+        }, 1000);
+        
         return [...prev, endpoint];
       });
     });
@@ -191,6 +201,7 @@ function App() {
             selectedEndpoint={selectedEndpoint}
             onSelectEndpoint={setSelectedEndpoint}
             onDeleteEndpoint={handleDeleteEndpoint}
+            newEndpointId={newEndpointId}
           />
         </div>
         
