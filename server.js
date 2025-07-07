@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import session from 'express-session';
 import passport from 'passport';
+import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 
@@ -41,6 +42,8 @@ app.use(cors({
   credentials: true
 }));
 
+app.use(cookieParser());
+
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
@@ -58,6 +61,23 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 configurePassport();
+
+// Anonymous user cookie middleware
+app.use((req, res, next) => {
+  if (!req.cookies?.anonymous_id) {
+    const anonymousId = uuidv4();
+    res.cookie('anonymous_id', anonymousId, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
+    });
+    req.anonymousId = anonymousId;
+  } else {
+    req.anonymousId = req.cookies.anonymous_id;
+  }
+  next();
+});
 
 // Custom middleware to capture raw body
 app.use((req, res, next) => {
@@ -80,9 +100,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.text({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// In-memory storage for anonymous users (fallback)
-const anonymousEndpoints = new Map();
-const anonymousRequests = new Map();
+// In-memory storage for anonymous users by cookie ID
+const anonymousEndpoints = new Map(); // Map<anonymousId, Map<endpointId, endpoint>>
+const anonymousRequests = new Map(); // Map<anonymousId, Map<requestId, request>>
 
 // In-memory storage for auth tokens (production should use Redis)
 const authTokens = new Map();
@@ -218,9 +238,12 @@ app.post('/auth/migrate-endpoints', async (req, res) => {
 
   try {
     let migratedCount = 0;
+    const anonymousId = req.anonymousId;
+    const userEndpoints = anonymousEndpoints.get(anonymousId) || new Map();
+    const userRequests = anonymousRequests.get(anonymousId) || new Map();
     
     for (const endpointId of endpointIds) {
-      const endpoint = anonymousEndpoints.get(endpointId);
+      const endpoint = userEndpoints.get(endpointId);
       
       if (endpoint) {
         // Create endpoint in database for authenticated user
@@ -232,7 +255,7 @@ app.post('/auth/migrate-endpoints', async (req, res) => {
         });
         
         // Migrate requests
-        const endpointRequests = Array.from(anonymousRequests.values())
+        const endpointRequests = Array.from(userRequests.values())
           .filter(r => r.endpointId === endpointId);
         
         for (const request of endpointRequests) {
@@ -247,8 +270,8 @@ app.post('/auth/migrate-endpoints', async (req, res) => {
         }
         
         // Remove from anonymous storage
-        anonymousEndpoints.delete(endpointId);
-        endpointRequests.forEach(r => anonymousRequests.delete(r.id));
+        userEndpoints.delete(endpointId);
+        endpointRequests.forEach(r => userRequests.delete(r.id));
         
         migratedCount++;
       }
@@ -316,8 +339,12 @@ const captureRequest = (req, res, next) => {
           body: requestData.body
         }).catch(err => console.error('Error storing request:', err));
       } else {
-        // Anonymous user - store in memory
-        anonymousRequests.set(requestData.id, requestData);
+        // Anonymous user - store in memory by cookie ID
+        const anonymousId = req.anonymousId;
+        if (!anonymousRequests.has(anonymousId)) {
+          anonymousRequests.set(anonymousId, new Map());
+        }
+        anonymousRequests.get(anonymousId).set(requestData.id, requestData);
       }
       
       io.emit('new_request', requestData);
@@ -339,24 +366,10 @@ app.get('/api/endpoints', optionalAuth, async (req, res) => {
       const endpoints = await getUserEndpoints(user.id);
       res.json(endpoints);
     } else {
-      // Get anonymous endpoints from memory, filtered by client's tracking
-      const clientEndpointIds = req.query.endpointIds;
-      let anonymousEndpointsList = Array.from(anonymousEndpoints.values());
-      
-      // Filter by client's localStorage tracking if provided
-      if (clientEndpointIds) {
-        try {
-          const endpointIds = JSON.parse(clientEndpointIds);
-          if (Array.isArray(endpointIds)) {
-            anonymousEndpointsList = anonymousEndpointsList.filter(endpoint => 
-              endpointIds.includes(endpoint.id)
-            );
-          }
-        } catch (error) {
-          console.error('Error parsing client endpoint IDs:', error);
-          // If parsing fails, return all endpoints (fallback behavior)
-        }
-      }
+      // Get anonymous endpoints from memory for this cookie ID
+      const anonymousId = req.anonymousId;
+      const userEndpoints = anonymousEndpoints.get(anonymousId) || new Map();
+      const anonymousEndpointsList = Array.from(userEndpoints.values());
       
       res.json(anonymousEndpointsList);
     }
@@ -392,8 +405,12 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
       });
       endpoint.user_id = user.id;
     } else {
-      // Save to memory for anonymous users
-      anonymousEndpoints.set(endpointId, endpoint);
+      // Save to memory for anonymous users by cookie ID
+      const anonymousId = req.anonymousId;
+      if (!anonymousEndpoints.has(anonymousId)) {
+        anonymousEndpoints.set(anonymousId, new Map());
+      }
+      anonymousEndpoints.get(anonymousId).set(endpointId, endpoint);
     }
     
     io.emit('endpoint_created', endpoint);
@@ -413,11 +430,15 @@ app.delete('/api/endpoints/:id', optionalAuth, async (req, res) => {
       await deleteEndpoint(id);
       await deleteEndpointRequests(id);
     } else {
-      // Delete from memory
-      if (anonymousEndpoints.has(id)) {
-        anonymousEndpoints.delete(id);
-        const endpointRequests = Array.from(anonymousRequests.values()).filter(r => r.endpointId === id);
-        endpointRequests.forEach(r => anonymousRequests.delete(r.id));
+      // Delete from memory by cookie ID
+      const anonymousId = req.anonymousId;
+      const userEndpoints = anonymousEndpoints.get(anonymousId) || new Map();
+      const userRequests = anonymousRequests.get(anonymousId) || new Map();
+      
+      if (userEndpoints.has(id)) {
+        userEndpoints.delete(id);
+        const endpointRequests = Array.from(userRequests.values()).filter(r => r.endpointId === id);
+        endpointRequests.forEach(r => userRequests.delete(r.id));
       } else {
         return res.status(404).json({ message: 'Endpoint not found' });
       }
@@ -440,8 +461,10 @@ app.get('/api/requests', optionalAuth, async (req, res) => {
       const requests = await getUserRequests(user.id);
       res.json(requests);
     } else {
-      // Get anonymous requests from memory
-      const anonymousRequestsList = Array.from(anonymousRequests.values());
+      // Get anonymous requests from memory for this cookie ID
+      const anonymousId = req.anonymousId;
+      const userRequests = anonymousRequests.get(anonymousId) || new Map();
+      const anonymousRequestsList = Array.from(userRequests.values());
       res.json(anonymousRequestsList);
     }
   } catch (error) {
@@ -459,8 +482,10 @@ app.get('/api/requests/:endpointId', optionalAuth, async (req, res) => {
       const requests = await getEndpointRequests(endpointId);
       res.json(requests);
     } else {
-      // Get requests from memory
-      const endpointRequests = Array.from(anonymousRequests.values()).filter(r => r.endpointId === endpointId);
+      // Get requests from memory for this cookie ID
+      const anonymousId = req.anonymousId;
+      const userRequests = anonymousRequests.get(anonymousId) || new Map();
+      const endpointRequests = Array.from(userRequests.values()).filter(r => r.endpointId === endpointId);
       res.json(endpointRequests);
     }
   } catch (error) {
@@ -479,8 +504,10 @@ app.all('/:path', captureRequest, async (req, res) => {
     endpoint = await getEndpointByPath(path);
     
     if (!endpoint) {
-      // Try to find in anonymous endpoints
-      endpoint = Array.from(anonymousEndpoints.values()).find(ep => ep.path === path);
+      // Try to find in anonymous endpoints for this cookie ID
+      const anonymousId = req.anonymousId;
+      const userEndpoints = anonymousEndpoints.get(anonymousId) || new Map();
+      endpoint = Array.from(userEndpoints.values()).find(ep => ep.path === path);
     }
     
     if (!endpoint) {
@@ -500,7 +527,9 @@ app.all('/:path', captureRequest, async (req, res) => {
       await updateEndpointRequestCount(endpoint.id);
     } else {
       // Anonymous endpoint
-      anonymousEndpoints.set(endpoint.id, {
+      const anonymousId = req.anonymousId;
+      const userEndpoints = anonymousEndpoints.get(anonymousId) || new Map();
+      userEndpoints.set(endpoint.id, {
         ...endpoint,
         requestCount: endpoint.requestCount + 1
       });
@@ -521,10 +550,8 @@ app.all('/:path', captureRequest, async (req, res) => {
 });
 
 io.on('connection', async (socket) => {
-  // Send initial data - for now, send anonymous data
-  // In a real app, you'd want to authenticate the socket connection
-  socket.emit('endpoints', Array.from(anonymousEndpoints.values()));
-  socket.emit('requests', Array.from(anonymousRequests.values()));
+  // Send initial data - endpoints and requests are now handled by HTTP requests
+  // with cookie-based identification
   
   socket.on('disconnect', () => {
     // Client disconnected

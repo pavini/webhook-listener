@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { HttpRequest, Endpoint } from './types';
 import { useSocket } from './hooks/useSocket';
 import { useAuth } from './hooks/useAuth';
-import { useAnonymousEndpoints } from './hooks/useAnonymousEndpoints';
+import { useAnonymousSession } from './hooks/useAnonymousSession';
 import { BACKEND_URL } from './config';
 import { EndpointList } from './components/EndpointList';
 import { RequestList } from './components/RequestList';
@@ -19,7 +19,7 @@ function App() {
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const { connected, subscribeToRequests, subscribeToEndpoints } = useSocket();
   const { user } = useAuth();
-  const { addAnonymousEndpoint, removeAnonymousEndpoint, getAnonymousEndpoints } = useAnonymousEndpoints();
+  const { anonymousId } = useAnonymousSession();
 
   // Clear data when user logs out
   useEffect(() => {
@@ -55,15 +55,7 @@ function App() {
         // Loading initial data for user: ${user ? user.username : 'anonymous'}
         
         // Load endpoints
-        let endpointsUrl = `${BACKEND_URL}/api/endpoints`;
-        
-        // For anonymous users, include localStorage-tracked endpoint IDs
-        if (!user) {
-          const anonymousEndpointIds = getAnonymousEndpoints();
-          if (anonymousEndpointIds.length > 0) {
-            endpointsUrl += `?endpointIds=${encodeURIComponent(JSON.stringify(anonymousEndpointIds))}`;
-          }
-        }
+        const endpointsUrl = `${BACKEND_URL}/api/endpoints`;
         
         const endpointsResponse = await makeAuthenticatedRequest(endpointsUrl);
         if (endpointsResponse.ok) {
@@ -85,7 +77,7 @@ function App() {
     };
 
     loadInitialData();
-  }, [user, getAnonymousEndpoints]);
+  }, [user, anonymousId]);
 
   useEffect(() => {
     const unsubscribeRequests = subscribeToRequests((request: HttpRequest) => {
@@ -99,18 +91,13 @@ function App() {
 
     const unsubscribeEndpoints = subscribeToEndpoints((endpoint: Endpoint) => {
       setEndpoints(prev => [...prev, endpoint]);
-      
-      // Track anonymous endpoints for migration
-      if (!user) {
-        addAnonymousEndpoint(endpoint.id);
-      }
     });
 
     return () => {
       unsubscribeRequests?.();
       unsubscribeEndpoints?.();
     };
-  }, [subscribeToRequests, subscribeToEndpoints, user, addAnonymousEndpoint]);
+  }, [subscribeToRequests, subscribeToEndpoints, user]);
 
   const handleCreateEndpoint = async (name: string) => {
     try {
@@ -146,10 +133,7 @@ function App() {
           setSelectedRequest(null);
         }
         
-        // Remove from anonymous tracking if user is not logged in
-        if (!user) {
-          removeAnonymousEndpoint(endpointId);
-        }
+        // Anonymous user data is now handled server-side by cookie
       } else {
         // Failed to delete endpoint from backend
       }

@@ -8,13 +8,26 @@ export const useSocket = () => {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const newSocket = io(BACKEND_URL);
+    console.log('Connecting to Socket.IO server at:', BACKEND_URL);
+    
+    const newSocket = io(BACKEND_URL, {
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      forceNew: true
+    });
     
     newSocket.on('connect', () => {
+      console.log('Socket.IO connected');
       setConnected(true);
     });
 
     newSocket.on('disconnect', () => {
+      console.log('Socket.IO disconnected');
+      setConnected(false);
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Socket.IO connection error:', error);
       setConnected(false);
     });
 
