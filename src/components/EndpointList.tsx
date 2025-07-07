@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Endpoint } from '../types';
 import { BACKEND_URL } from '../config';
 
@@ -7,6 +7,7 @@ interface EndpointListProps {
   selectedEndpoint: string | null;
   onSelectEndpoint: (endpointId: string) => void;
   onDeleteEndpoint: (endpointId: string) => void;
+  newEndpointId?: string | null; // Pass the newly created endpoint ID from parent
 }
 
 export const EndpointList = ({
@@ -14,41 +15,27 @@ export const EndpointList = ({
   selectedEndpoint,
   onSelectEndpoint,
   onDeleteEndpoint,
+  newEndpointId,
 }: EndpointListProps) => {
   const [copiedEndpoints, setCopiedEndpoints] = useState<Set<string>>(new Set());
-  const [newEndpoints, setNewEndpoints] = useState<Set<string>>(new Set());
-  const prevEndpointsRef = useRef<string[]>([]);
+  const [animatingEndpoints, setAnimatingEndpoints] = useState<Set<string>>(new Set());
 
-  useLayoutEffect(() => {
-    const currentIds = endpoints.map(e => e.id);
-    const previousIds = prevEndpointsRef.current;
-    
-    // Only detect new items if we have previous data (avoid initial load animation)
-    if (previousIds.length > 0) {
-      const newIds = currentIds.filter(id => !previousIds.includes(id));
+  // Handle animation for new endpoints
+  useEffect(() => {
+    if (newEndpointId && endpoints.some(ep => ep.id === newEndpointId)) {
+      setAnimatingEndpoints(new Set([newEndpointId]));
       
-      // Only animate if we have exactly one new endpoint (single addition, not bulk reload)
-      if (newIds.length === 1) {
-        const newId = newIds[0];
-        
-        // Clear any existing animations first
-        setNewEndpoints(new Set([newId]));
-        
-        // Clear the animation for this specific new endpoint
-        const timer = setTimeout(() => {
-          setNewEndpoints(prev => {
-            const updated = new Set(prev);
-            updated.delete(newId);
-            return updated;
-          });
-        }, 800);
-        
-        return () => clearTimeout(timer);
-      }
+      const timer = setTimeout(() => {
+        setAnimatingEndpoints(prev => {
+          const updated = new Set(prev);
+          updated.delete(newEndpointId);
+          return updated;
+        });
+      }, 800);
+      
+      return () => clearTimeout(timer);
     }
-    
-    prevEndpointsRef.current = currentIds;
-  }, [endpoints]);
+  }, [newEndpointId, endpoints]);
 
   const handleCopyUrl = async (endpoint: Endpoint, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -84,7 +71,7 @@ export const EndpointList = ({
           {sortedEndpoints.map((endpoint) => (
             <li
               key={endpoint.id}
-              className={`endpoint-item ${selectedEndpoint === endpoint.id ? 'selected' : ''} ${newEndpoints.has(endpoint.id) ? 'endpoint-new' : ''}`}
+              className={`endpoint-item ${selectedEndpoint === endpoint.id ? 'selected' : ''} ${animatingEndpoints.has(endpoint.id) ? 'endpoint-new' : ''}`}
               onClick={() => onSelectEndpoint(endpoint.id)}
             >
               <div className="endpoint-header">

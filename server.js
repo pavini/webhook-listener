@@ -115,6 +115,44 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Build info endpoint
+app.get('/build-info', (req, res) => {
+  try {
+    import('fs').then(fs => {
+      const buildInfoPath = join(__dirname, 'build-info.txt');
+      if (fs.existsSync(buildInfoPath)) {
+        const buildInfo = fs.readFileSync(buildInfoPath, 'utf8');
+        res.status(200).json({
+          buildInfo: buildInfo.split('\n').filter(line => line.trim()),
+          serverStartTime: new Date().toISOString(),
+          environment: process.env.NODE_ENV || 'development',
+          nodeVersion: process.version
+        });
+      } else {
+        res.status(200).json({
+          buildInfo: ['Build info not available - file not found'],
+          serverStartTime: new Date().toISOString(),
+          environment: process.env.NODE_ENV || 'development',
+          nodeVersion: process.version
+        });
+      }
+    }).catch(err => {
+      res.status(200).json({
+        buildInfo: ['Build info not available - error reading file'],
+        error: err.message,
+        serverStartTime: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        nodeVersion: process.version
+      });
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to read build info',
+      details: error.message
+    });
+  }
+});
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(join(__dirname, 'dist')));

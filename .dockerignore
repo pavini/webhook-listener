@@ -7,3 +7,15 @@ README.md
 .nyc_output
 coverage
 .DS_Store
+dist
+.vite
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+cookies*.txt
+*.tmp
+.temp
+.cache
+build-info.txt
