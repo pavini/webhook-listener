@@ -27,20 +27,18 @@ export const EndpointList = ({
     if (previousIds.length > 0) {
       const newIds = currentIds.filter(id => !previousIds.includes(id));
       
-      // Only animate if we have truly new endpoints (not a full reload)
-      if (newIds.length > 0 && newIds.length < currentIds.length) {
-        // Only set the truly new endpoints, don't replace the entire set
-        setNewEndpoints(prev => {
-          const updated = new Set(prev);
-          newIds.forEach(id => updated.add(id));
-          return updated;
-        });
+      // Only animate if we have exactly one new endpoint (single addition, not bulk reload)
+      if (newIds.length === 1) {
+        const newId = newIds[0];
         
-        // Clear the animation for these specific new endpoints
+        // Clear any existing animations first
+        setNewEndpoints(new Set([newId]));
+        
+        // Clear the animation for this specific new endpoint
         const timer = setTimeout(() => {
           setNewEndpoints(prev => {
             const updated = new Set(prev);
-            newIds.forEach(id => updated.delete(id));
+            updated.delete(newId);
             return updated;
           });
         }, 800);
