@@ -52,10 +52,18 @@ export const useSocket = () => {
     if (!socket) return;
 
     socket.on('endpoint_created', callback);
-    socket.on('endpoint_deleted', callback);
     
     return () => {
       socket.off('endpoint_created', callback);
+    };
+  };
+
+  const subscribeToEndpointDeletion = (callback: (data: { id: string }) => void) => {
+    if (!socket) return;
+
+    socket.on('endpoint_deleted', callback);
+    
+    return () => {
       socket.off('endpoint_deleted', callback);
     };
   };
@@ -65,5 +73,6 @@ export const useSocket = () => {
     connected,
     subscribeToRequests,
     subscribeToEndpoints,
+    subscribeToEndpointDeletion,
   };
 };

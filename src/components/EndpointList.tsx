@@ -31,7 +31,7 @@ export const EndpointList = ({
       if (newIds.length === 1) {
         const newId = newIds[0];
         
-        // Clear any existing animations first
+        // Set only this new endpoint for animation
         setNewEndpoints(new Set([newId]));
         
         // Clear the animation for this specific new endpoint
@@ -44,6 +44,9 @@ export const EndpointList = ({
         }, 800);
         
         return () => clearTimeout(timer);
+      } else if (newIds.length === 0) {
+        // If no new endpoints (like after deletion), clear all animations
+        setNewEndpoints(new Set());
       }
     }
     

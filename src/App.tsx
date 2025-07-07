@@ -17,7 +17,7 @@ function App() {
   const [requests, setRequests] = useState<HttpRequest[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
-  const { connected, subscribeToRequests, subscribeToEndpoints } = useSocket();
+  const { connected, subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion } = useSocket();
   const { user } = useAuth();
   useAnonymousSession(); // Initialize anonymous session
 
@@ -90,14 +90,31 @@ function App() {
     });
 
     const unsubscribeEndpoints = subscribeToEndpoints((endpoint: Endpoint) => {
-      setEndpoints(prev => [...prev, endpoint]);
+      setEndpoints(prev => {
+        // Check if endpoint already exists to avoid duplicates
+        const exists = prev.some(ep => ep.id === endpoint.id);
+        if (exists) {
+          return prev;
+        }
+        return [...prev, endpoint];
+      });
+    });
+
+    const unsubscribeEndpointDeletion = subscribeToEndpointDeletion((data: { id: string }) => {
+      setEndpoints(prev => prev.filter(endpoint => endpoint.id !== data.id));
+      setRequests(prev => prev.filter(request => request.endpointId !== data.id));
+      if (selectedEndpoint === data.id) {
+        setSelectedEndpoint(null);
+        setSelectedRequest(null);
+      }
     });
 
     return () => {
       unsubscribeRequests?.();
       unsubscribeEndpoints?.();
+      unsubscribeEndpointDeletion?.();
     };
-  }, [subscribeToRequests, subscribeToEndpoints, user]);
+  }, [subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion, user, selectedEndpoint]);
 
   const handleCreateEndpoint = async (name: string) => {
     try {
@@ -124,19 +141,11 @@ function App() {
         method: 'DELETE',
       });
       
-      if (response.ok) {
-        // Only update local state if backend deletion succeeded
-        setEndpoints(prev => prev.filter(endpoint => endpoint.id !== endpointId));
-        setRequests(prev => prev.filter(request => request.endpointId !== endpointId));
-        if (selectedEndpoint === endpointId) {
-          setSelectedEndpoint(null);
-          setSelectedRequest(null);
-        }
-        
-        // Anonymous user data is now handled server-side by cookie
-      } else {
+      if (!response.ok) {
         // Failed to delete endpoint from backend
+        console.error('Failed to delete endpoint');
       }
+      // Note: Don't update local state here - the WebSocket will handle it
     } catch {
       // Error deleting endpoint
     }
