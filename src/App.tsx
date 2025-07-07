@@ -19,7 +19,7 @@ function App() {
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const { connected, subscribeToRequests, subscribeToEndpoints } = useSocket();
   const { user } = useAuth();
-  const { anonymousId } = useAnonymousSession();
+  useAnonymousSession(); // Initialize anonymous session
 
   // Clear data when user logs out
   useEffect(() => {
@@ -77,7 +77,7 @@ function App() {
     };
 
     loadInitialData();
-  }, [user, anonymousId]);
+  }, [user]);
 
   useEffect(() => {
     const unsubscribeRequests = subscribeToRequests((request: HttpRequest) => {

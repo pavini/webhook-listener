@@ -5,6 +5,8 @@ import cors from 'cors';
 import session from 'express-session';
 import passport from 'passport';
 import cookieParser from 'cookie-parser';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 
@@ -26,6 +28,10 @@ import { configurePassport, requireAuth, optionalAuth } from './auth.js';
 
 // Load environment variables
 dotenv.config();
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const server = createServer(app);
@@ -99,6 +105,20 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.text({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(join(__dirname, 'dist')));
+}
 
 // In-memory storage for anonymous users by cookie ID
 const anonymousEndpoints = new Map(); // Map<anonymousId, Map<endpointId, endpoint>>
@@ -493,6 +513,25 @@ app.get('/api/requests/:endpointId', optionalAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch requests' });
   }
 });
+
+// Serve React app for all non-API routes in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res, next) => {
+    // Skip if it's an API route or a dynamic endpoint
+    if (req.url.startsWith('/api/') || req.url.startsWith('/auth/') || req.url.startsWith('/health')) {
+      return next();
+    }
+    
+    // If the URL looks like a UUID (dynamic endpoint), let it pass through
+    const pathSegment = req.url.split('/')[1];
+    if (pathSegment && pathSegment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return next();
+    }
+    
+    // Serve the React app
+    res.sendFile(join(__dirname, 'dist', 'index.html'));
+  });
+}
 
 // Catch-all route for dynamic endpoints
 app.all('/:path', captureRequest, async (req, res) => {
