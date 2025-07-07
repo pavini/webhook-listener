@@ -1,9 +1,8 @@
-# Multi-stage production Dockerfile for HookDebug
+# EasyPanel-optimized production Dockerfile for HookDebug
+# This version generates cache bust values automatically without external env vars
+
 # Stage 1: Build the React frontend
 FROM node:22-alpine AS frontend-build
-
-# Build argument to force cache invalidation
-ARG CACHE_BUST=1
 
 WORKDIR /app
 
@@ -20,8 +19,9 @@ RUN npm ci --only=production=false
 COPY . .
 
 # Generate unique build timestamp to bust cache on every build
-# Using CACHE_BUST arg to ensure this layer is never cached
-RUN echo "Cache bust: $CACHE_BUST" && \
+# Using random value + timestamp to ensure uniqueness
+RUN CACHE_BUST=$(date +%s)_$(shuf -i 1-1000000 -n 1 2>/dev/null || echo $RANDOM) && \
+    echo "Cache bust: $CACHE_BUST" && \
     BUILD_TIMESTAMP=$(date +%s) && \
     echo "Build timestamp: $BUILD_TIMESTAMP" > /app/build-info.txt && \
     echo "Build date: $(date -u)" >> /app/build-info.txt && \
@@ -33,9 +33,6 @@ RUN npm run build
 
 # Stage 2: Setup the production runtime
 FROM node:22-alpine AS production
-
-# Build argument to force cache invalidation
-ARG CACHE_BUST=1
 
 # Install runtime dependencies
 RUN apk add --no-cache python3 make g++ curl
@@ -59,8 +56,9 @@ COPY server.js ./
 COPY database.js ./
 COPY auth.js ./
 
-# Add production stage timestamp - using CACHE_BUST to ensure this runs every time
-RUN echo "Production cache bust: $CACHE_BUST" && \
+# Add production stage timestamp with cache bust
+RUN PROD_CACHE_BUST=$(date +%s)_$(shuf -i 1-1000000 -n 1 2>/dev/null || echo $RANDOM) && \
+    echo "Production cache bust: $PROD_CACHE_BUST" && \
     echo "Production stage timestamp: $(date +%s)" >> /app/build-info.txt && \
     echo "Production stage date: $(date -u)" >> /app/build-info.txt
 
