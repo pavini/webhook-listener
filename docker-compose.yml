@@ -8,6 +8,7 @@ services:
       no_cache: true
       args:
         CACHE_BUST: ${CACHE_BUST:-$(date +%s)}
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
     ports:
       - "3001:3001"
     environment:

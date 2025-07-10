@@ -4,6 +4,8 @@ FROM node:22-alpine AS frontend-build
 
 # Build argument to force cache invalidation
 ARG CACHE_BUST=1
+# Build argument for Vite environment variables
+ARG VITE_BACKEND_URL
 
 WORKDIR /app
 
@@ -27,6 +29,9 @@ RUN echo "Cache bust: $CACHE_BUST" && \
     echo "Build date: $(date -u)" >> /app/build-info.txt && \
     echo "Git commit: $(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')" >> /app/build-info.txt && \
     echo "Cache bust value: $CACHE_BUST" >> /app/build-info.txt
+
+# Set environment variable for Vite build
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
 # Build the frontend
 RUN npm run build
