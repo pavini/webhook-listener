@@ -68,11 +68,22 @@ export const useSocket = () => {
     };
   };
 
+  const subscribeToRequestDeletion = (callback: (data: { requestId: string }) => void) => {
+    if (!socket) return;
+
+    socket.on('requestDeleted', callback);
+    
+    return () => {
+      socket.off('requestDeleted', callback);
+    };
+  };
+
   return {
     socket,
     connected,
     subscribeToRequests,
     subscribeToEndpoints,
     subscribeToEndpointDeletion,
+    subscribeToRequestDeletion,
   };
 };
