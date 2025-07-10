@@ -22,7 +22,8 @@ import {
   createRequest, 
   getEndpointRequests, 
   getUserRequests,
-  deleteEndpointRequests 
+  deleteEndpointRequests,
+  deleteRequest 
 } from './database.js';
 import { configurePassport, requireAuth, optionalAuth } from './auth.js';
 
@@ -560,6 +561,42 @@ app.get('/api/requests/:endpointId', optionalAuth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching endpoint requests:', error);
     res.status(500).json({ error: 'Failed to fetch requests' });
+  }
+});
+
+// Delete a specific request
+app.delete('/api/requests/:id', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = getAuthenticatedUser(req);
+    
+    if (user) {
+      // For authenticated users, delete from database
+      const deleted = await deleteRequest(id);
+      if (deleted) {
+        // Emit real-time update to connected clients
+        io.emit('requestDeleted', { requestId: id });
+        res.json({ message: 'Request deleted successfully' });
+      } else {
+        res.status(404).json({ error: 'Request not found' });
+      }
+    } else {
+      // For anonymous users, delete from memory
+      const anonymousId = req.anonymousId;
+      const userRequests = anonymousRequests.get(anonymousId) || new Map();
+      
+      if (userRequests.has(id)) {
+        userRequests.delete(id);
+        // Emit real-time update to connected clients
+        io.emit('requestDeleted', { requestId: id });
+        res.json({ message: 'Request deleted successfully' });
+      } else {
+        res.status(404).json({ error: 'Request not found' });
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting request:', error);
+    res.status(500).json({ error: 'Failed to delete request' });
   }
 });
 

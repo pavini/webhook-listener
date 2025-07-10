@@ -18,7 +18,7 @@ function App() {
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [newEndpointId, setNewEndpointId] = useState<string | null>(null);
-  const { connected, subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion } = useSocket();
+  const { connected, subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion, subscribeToRequestDeletion } = useSocket();
   const { user } = useAuth();
   useAnonymousSession(); // Initialize anonymous session
 
@@ -119,12 +119,20 @@ function App() {
       }
     });
 
+    const unsubscribeRequestDeletion = subscribeToRequestDeletion((data: { requestId: string }) => {
+      setRequests(prev => prev.filter(request => request.id !== data.requestId));
+      if (selectedRequest === data.requestId) {
+        setSelectedRequest(null);
+      }
+    });
+
     return () => {
       unsubscribeRequests?.();
       unsubscribeEndpoints?.();
       unsubscribeEndpointDeletion?.();
+      unsubscribeRequestDeletion?.();
     };
-  }, [subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion, user, selectedEndpoint]);
+  }, [subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion, subscribeToRequestDeletion, user, selectedEndpoint, selectedRequest]);
 
   const handleCreateEndpoint = async (name: string) => {
     try {
@@ -161,10 +169,27 @@ function App() {
     }
   };
 
-  const handleDeleteRequest = (requestId: string) => {
-    setRequests(prev => prev.filter(request => request.id !== requestId));
-    if (selectedRequest === requestId) {
-      setSelectedRequest(null);
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/requests/${requestId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
+        },
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        setRequests(prev => prev.filter(request => request.id !== requestId));
+        if (selectedRequest === requestId) {
+          setSelectedRequest(null);
+        }
+      } else {
+        console.error('Failed to delete request');
+      }
+    } catch (error) {
+      console.error('Error deleting request:', error);
     }
   };
 

@@ -234,4 +234,14 @@ export async function deleteEndpointRequests(endpointId) {
   }
 }
 
+export async function deleteRequest(requestId) {
+  try {
+    const result = await db.run('DELETE FROM requests WHERE id = ?', [requestId]);
+    return result.changes > 0;
+  } catch (error) {
+    console.error('Error deleting request:', error);
+    throw error;
+  }
+}
+
 export { db };
