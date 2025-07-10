@@ -572,7 +572,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Catch-all route for dynamic endpoints
-app.all('/:path', captureRequest, async (req, res) => {
+app.all('/:path([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', captureRequest, async (req, res) => {
   try {
     const { path } = req.params;
     let endpoint;
