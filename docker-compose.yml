@@ -1,12 +1,35 @@
+version: '3.8'
 
 services:
   hookdebug:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+      no_cache: true
+      args:
+        CACHE_BUST: ${CACHE_BUST:-$(date +%s)}
     ports:
       - "3001:3001"
-      - "5173:5173"
-    volumes:
-      - .:/app
-      - /app/node_modules
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Optional: Add volume for persistent data
+    volumes:
+      - ./data:/app/data
+    # Optional: Add logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
