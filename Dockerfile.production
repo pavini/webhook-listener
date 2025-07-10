@@ -14,7 +14,7 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production=false
+RUN npm ci
 
 # Copy source code (this layer will be invalidated on any code change)
 COPY . .
@@ -46,7 +46,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies and rebuild sqlite3
-RUN npm ci --only=production && npm rebuild sqlite3
+RUN npm ci --omit=dev && npm rebuild sqlite3
 
 # Copy built frontend from previous stage
 COPY --from=frontend-build /app/dist ./dist

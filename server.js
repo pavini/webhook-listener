@@ -186,12 +186,13 @@ const getAuthenticatedUser = (req) => {
   return null;
 };
 
-// Authentication routes
-app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
+// Authentication routes (only if GitHub OAuth is configured)
+if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
 
-app.get('/auth/github/callback', 
-  passport.authenticate('github', { failureRedirect: process.env.FRONTEND_URL }),
-  async (req, res) => {
+  app.get('/auth/github/callback', 
+    passport.authenticate('github', { failureRedirect: process.env.FRONTEND_URL }),
+    async (req, res) => {
     // OAuth authentication successful - migration will be handled by frontend
     
     // Create persistent auth token
@@ -206,6 +207,16 @@ app.get('/auth/github/callback',
     res.redirect(`${process.env.FRONTEND_URL}?auth_token=${authToken}`);
   }
 );
+} else {
+  // Provide fallback routes when GitHub OAuth is not configured
+  app.get('/auth/github', (req, res) => {
+    res.status(501).json({ error: 'GitHub OAuth not configured' });
+  });
+  
+  app.get('/auth/github/callback', (req, res) => {
+    res.status(501).json({ error: 'GitHub OAuth not configured' });
+  });
+}
 
 app.post('/auth/logout', (req, res) => {
   req.logout((err) => {
@@ -479,7 +490,7 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
   }
 });
 
-app.delete('/api/endpoints/:id([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', optionalAuth, async (req, res) => {
+app.delete('/api/endpoints/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -531,7 +542,7 @@ app.get('/api/requests', optionalAuth, async (req, res) => {
   }
 });
 
-app.get('/api/requests/:endpointId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', optionalAuth, async (req, res) => {
+app.get('/api/requests/:endpointId', optionalAuth, async (req, res) => {
   try {
     const { endpointId } = req.params;
     
@@ -572,7 +583,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Catch-all route for dynamic endpoints
-app.all('/:path([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', captureRequest, async (req, res) => {
+app.all('/:path', captureRequest, async (req, res) => {
   try {
     const { path } = req.params;
     let endpoint;

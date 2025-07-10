@@ -1,0 +1,12 @@
+
+services:
+  hookdebug:
+    build: .
+    ports:
+      - "3001:3001"
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development

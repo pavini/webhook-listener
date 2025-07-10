@@ -4,15 +4,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { getUserByGithubId, createUser, getUserById } from './database.js';
 
 export function configurePassport() {
-  const backendUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://request.hookdebug.com'
-    : 'http://localhost:3001';
-  
-  passport.use(new GitHubStrategy({
-    clientID: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: `${backendUrl}/auth/github/callback`
-  },
+  // Only configure GitHub OAuth if credentials are provided
+  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+    const backendUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://request.hookdebug.com'
+      : 'http://localhost:3001';
+    
+    passport.use(new GitHubStrategy({
+      clientID: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      callbackURL: `${backendUrl}/auth/github/callback`
+    },
   async (accessToken, refreshToken, profile, done) => {
     try {
       // Check if user already exists
@@ -49,18 +51,21 @@ export function configurePassport() {
     }
   }));
 
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
-  });
+    passport.serializeUser((user, done) => {
+      done(null, user.id);
+    });
 
-  passport.deserializeUser(async (id, done) => {
-    try {
-      const user = await getUserById(id);
-      done(null, user);
-    } catch (error) {
-      done(error, null);
-    }
-  });
+    passport.deserializeUser(async (id, done) => {
+      try {
+        const user = await getUserById(id);
+        done(null, user);
+      } catch (error) {
+        done(error, null);
+      }
+    });
+  } else {
+    console.warn('GitHub OAuth not configured - GitHub authentication will be disabled');
+  }
 }
 
 export function requireAuth(req, res, next) {
