@@ -490,9 +490,14 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
   }
 });
 
-app.delete('/api/endpoints/:id([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', optionalAuth, async (req, res) => {
+app.delete('/api/endpoints/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validate UUID format
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ error: 'Invalid endpoint ID format' });
+    }
     
     if (req.isAuthenticated()) {
       // Delete from database
@@ -542,9 +547,14 @@ app.get('/api/requests', optionalAuth, async (req, res) => {
   }
 });
 
-app.get('/api/requests/:endpointId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', optionalAuth, async (req, res) => {
+app.get('/api/requests/:endpointId', optionalAuth, async (req, res) => {
   try {
     const { endpointId } = req.params;
+    
+    // Validate UUID format
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(endpointId)) {
+      return res.status(400).json({ error: 'Invalid endpoint ID format' });
+    }
     
     if (req.isAuthenticated()) {
       // Get requests from database
@@ -583,9 +593,17 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Catch-all route for dynamic endpoints
-app.all('/:path([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', captureRequest, async (req, res) => {
+app.all('/:path', captureRequest, async (req, res) => {
   try {
     const { path } = req.params;
+    
+    // Validate UUID format for endpoint paths
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(path)) {
+      return res.status(404).json({
+        error: 'Endpoint not found',
+        message: `Invalid endpoint path format: ${path}`
+      });
+    }
     let endpoint;
     
     // Try to find endpoint in database first
