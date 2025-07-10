@@ -479,7 +479,7 @@ app.post('/api/endpoints', optionalAuth, async (req, res) => {
   }
 });
 
-app.delete('/api/endpoints/:id', optionalAuth, async (req, res) => {
+app.delete('/api/endpoints/:id([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -531,7 +531,7 @@ app.get('/api/requests', optionalAuth, async (req, res) => {
   }
 });
 
-app.get('/api/requests/:endpointId', optionalAuth, async (req, res) => {
+app.get('/api/requests/:endpointId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', optionalAuth, async (req, res) => {
   try {
     const { endpointId } = req.params;
     
