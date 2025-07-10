@@ -171,12 +171,8 @@ function App() {
 
   const handleDeleteRequest = async (requestId: string) => {
     try {
-      const response = await fetch(`/api/requests/${requestId}`, {
+      const response = await makeAuthenticatedRequest(`${BACKEND_URL}/api/requests/${requestId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
-        },
       });
 
       if (response.ok) {
