@@ -86,23 +86,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Custom middleware to capture raw body
-app.use((req, res, next) => {
-  if (req.url.startsWith('/api/') || req.url.startsWith('/auth/')) {
-    return next();
-  }
-  
-  let data = [];
-  req.on('data', chunk => {
-    data.push(chunk);
-  });
-  
-  req.on('end', () => {
-    req.rawBody = Buffer.concat(data);
-    next();
-  });
-});
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.text({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -370,15 +353,11 @@ const captureRequest = (req, res, next) => {
   res.end = function(chunk, encoding) {
     // Only capture if this is for a dynamic endpoint
     if (req.endpointId) {
-      let body;
+      let body = '';
       
-      // Use raw body if available
-      if (req.rawBody && req.rawBody.length > 0) {
-        body = req.rawBody.toString('utf8');
-      } else if (req.body !== undefined) {
-        if (Buffer.isBuffer(req.body)) {
-          body = req.body.toString('utf8');
-        } else if (typeof req.body === 'string') {
+      // Handle different body types from Express middleware
+      if (req.body !== undefined) {
+        if (typeof req.body === 'string') {
           body = req.body;
         } else if (typeof req.body === 'object') {
           body = JSON.stringify(req.body, null, 2);
@@ -394,7 +373,10 @@ const captureRequest = (req, res, next) => {
         headers: req.headers,
         body: body,
         timestamp: new Date(),
-        endpointId: req.endpointId
+        endpointId: req.endpointId,
+        path: req.endpointPath,
+        subPath: req.endpointSubPath,
+        fullPath: req.endpointFullPath
       };
       
       // Store request based on authentication
@@ -619,7 +601,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Catch-all route for dynamic endpoints
+// Catch-all route for dynamic endpoints (base path)
 app.all('/:path', captureRequest, async (req, res) => {
   try {
     const { path } = req.params;
@@ -629,10 +611,15 @@ app.all('/:path', captureRequest, async (req, res) => {
     endpoint = await getEndpointByPath(path);
     
     if (!endpoint) {
-      // Try to find in anonymous endpoints for this cookie ID
-      const anonymousId = req.anonymousId;
-      const userEndpoints = anonymousEndpoints.get(anonymousId) || new Map();
-      endpoint = Array.from(userEndpoints.values()).find(ep => ep.path === path);
+      // Try to find in anonymous endpoints - search ALL anonymous users, not just current cookie
+      for (const [anonymousId, userEndpoints] of anonymousEndpoints) {
+        endpoint = Array.from(userEndpoints.values()).find(ep => ep.path === path);
+        if (endpoint) {
+          // Found the endpoint! Set the correct anonymousId for request tracking
+          req.anonymousId = anonymousId;
+          break;
+        }
+      }
     }
     
     if (!endpoint) {
@@ -645,6 +632,9 @@ app.all('/:path', captureRequest, async (req, res) => {
     // Set endpoint data for request tracking
     req.endpointId = endpoint.id;
     req.endpoint = endpoint;
+    req.endpointPath = path;
+    req.endpointSubPath = undefined; // No sub-path for base route
+    req.endpointFullPath = path;
     
     // Update request count
     if (endpoint.user_id) {
@@ -667,6 +657,73 @@ app.all('/:path', captureRequest, async (req, res) => {
       endpoint: endpoint.name,
       method: req.method,
       path: path
+    });
+  } catch (error) {
+    console.error('Error handling dynamic endpoint:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Catch-all route for dynamic endpoints (with optional sub-paths)
+app.all('/:path/*', captureRequest, async (req, res) => {
+  try {
+    const { path } = req.params;
+    const subPath = req.params[0]; // The wildcard part
+    const fullPath = `${path}/${subPath}`;
+    let endpoint;
+    
+    // Try to find endpoint in database first (using only the base path)
+    endpoint = await getEndpointByPath(path);
+    
+    if (!endpoint) {
+      // Try to find in anonymous endpoints - search ALL anonymous users, not just current cookie
+      for (const [anonymousId, userEndpoints] of anonymousEndpoints) {
+        endpoint = Array.from(userEndpoints.values()).find(ep => ep.path === path);
+        if (endpoint) {
+          // Found the endpoint! Set the correct anonymousId for request tracking
+          req.anonymousId = anonymousId;
+          break;
+        }
+      }
+    }
+    
+    if (!endpoint) {
+      return res.status(404).json({
+        error: 'Endpoint not found',
+        message: `No endpoint found for path: ${path}`
+      });
+    }
+    
+    // Set endpoint data for request tracking
+    req.endpointId = endpoint.id;
+    req.endpoint = endpoint;
+    req.endpointPath = path;
+    req.endpointSubPath = subPath;
+    req.endpointFullPath = fullPath;
+    
+    // Update request count
+    if (endpoint.user_id) {
+      // Database endpoint
+      await updateEndpointRequestCount(endpoint.id);
+    } else {
+      // Anonymous endpoint
+      const anonymousId = req.anonymousId;
+      const userEndpoints = anonymousEndpoints.get(anonymousId) || new Map();
+      userEndpoints.set(endpoint.id, {
+        ...endpoint,
+        requestCount: endpoint.requestCount + 1
+      });
+    }
+    
+    // Send successful response
+    res.status(200).json({
+      message: 'Request received successfully',
+      timestamp: new Date(),
+      endpoint: endpoint.name,
+      method: req.method,
+      path: path,
+      subPath: subPath,
+      fullPath: fullPath
     });
   } catch (error) {
     console.error('Error handling dynamic endpoint:', error);

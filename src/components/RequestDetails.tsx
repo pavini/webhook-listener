@@ -52,7 +52,16 @@ export const RequestDetails = ({ request }: RequestDetailsProps) => {
           <strong>Method:</strong> <span className={`method ${request.method.toLowerCase()}`}>{request.method}</span>
         </div>
         <div className="meta-item">
-          <strong>URL:</strong> {request.url}
+          <strong>URL:</strong> 
+          {request.subPath ? (
+            <div className="url-details-with-subpath">
+              <span className="base-path-details">{request.path || 'unknown'}</span>
+              <span className="subpath-separator-details">/</span>
+              <span className="sub-path-details">{request.subPath}</span>
+            </div>
+          ) : (
+            <span>{request.url}</span>
+          )}
         </div>
         <div className="meta-item">
           <strong>Timestamp:</strong> {new Date(request.timestamp).toLocaleString()}

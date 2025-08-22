@@ -6,6 +6,9 @@ export interface HttpRequest {
   body?: string;
   timestamp: Date;
   endpointId: string;
+  path?: string;      // Base endpoint path
+  subPath?: string;   // Sub-path after the endpoint
+  fullPath?: string;  // Complete path including sub-path
 }
 
 export interface Endpoint {
