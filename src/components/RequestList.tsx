@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { HttpRequest } from '../types';
 
 interface RequestListProps {
@@ -6,6 +6,7 @@ interface RequestListProps {
   selectedRequest: string | null;
   onSelectRequest: (requestId: string) => void;
   onDeleteRequest: (requestId: string) => void;
+  selectedEndpoint?: string | null; // Add endpoint context for proper animation logic
 }
 
 export const RequestList = ({
@@ -13,31 +14,67 @@ export const RequestList = ({
   selectedRequest,
   onSelectRequest,
   onDeleteRequest,
+  selectedEndpoint,
 }: RequestListProps) => {
   const [newRequests, setNewRequests] = useState<Set<string>>(new Set());
-  const prevRequestsRef = useRef<string[]>([]);
+  const lastRequestTimestamp = useRef<number>(0);
 
-  useLayoutEffect(() => {
-    const currentIds = requests.map(r => r.id);
-    const previousIds = prevRequestsRef.current;
+  useEffect(() => {
+    if (requests.length === 0) return;
     
-    // Only detect new items if we have previous data (avoid initial load animation)
-    if (previousIds.length > 0) {
-      const newIds = currentIds.filter(id => !previousIds.includes(id));
+    // Find requests that are newer than our last known timestamp
+    const recentRequests = requests.filter(request => {
+      const requestTime = new Date(request.timestamp).getTime();
+      return requestTime > lastRequestTimestamp.current;
+    });
+    
+    if (recentRequests.length > 0 && lastRequestTimestamp.current > 0) {
+      // Get the most recent request (should be the newest)
+      const newestRequest = recentRequests.reduce((newest, current) => {
+        const newestTime = new Date(newest.timestamp).getTime();
+        const currentTime = new Date(current.timestamp).getTime();
+        return currentTime > newestTime ? current : newest;
+      });
       
-      if (newIds.length > 0) {
-        setNewRequests(new Set(newIds));
-        
-        const timer = setTimeout(() => {
-          setNewRequests(new Set());
-        }, 1200);
-        
-        return () => clearTimeout(timer);
-      }
+      // Only animate the single newest request
+      setNewRequests(new Set([newestRequest.id]));
+      
+      // Clear animation after delay
+      const clearTimer = setTimeout(() => {
+        setNewRequests(prev => {
+          const updated = new Set(prev);
+          updated.delete(newestRequest.id);
+          return updated;
+        });
+      }, 1200);
+      
+      // Update our timestamp reference to the newest request
+      lastRequestTimestamp.current = new Date(newestRequest.timestamp).getTime();
+      
+      return () => clearTimeout(clearTimer);
+    } else if (lastRequestTimestamp.current === 0 && requests.length > 0) {
+      // Initialize timestamp on first load
+      const latestRequest = requests.reduce((latest, current) => {
+        const latestTime = new Date(latest.timestamp).getTime();
+        const currentTime = new Date(current.timestamp).getTime();
+        return currentTime > latestTime ? current : latest;
+      });
+      lastRequestTimestamp.current = new Date(latestRequest.timestamp).getTime();
     }
-    
-    prevRequestsRef.current = currentIds;
   }, [requests]);
+
+  // Reset timestamp when endpoint changes
+  useEffect(() => {
+    if (requests.length > 0) {
+      const latestRequest = requests.reduce((latest, current) => {
+        const latestTime = new Date(latest.timestamp).getTime();
+        const currentTime = new Date(current.timestamp).getTime();
+        return currentTime > latestTime ? current : latest;
+      });
+      lastRequestTimestamp.current = new Date(latestRequest.timestamp).getTime();
+    }
+    setNewRequests(new Set()); // Clear any animations when switching endpoints
+  }, [selectedEndpoint]);
   return (
     <div className="request-list">
       <h2>Requests</h2>
@@ -67,7 +104,17 @@ export const RequestList = ({
                 </button>
               </div>
               <div className="request-info">
-                <span className="url">{request.url}</span>
+                <div className="url-container">
+                  {request.subPath ? (
+                    <div className="url-with-subpath">
+                      <span className="base-path">{request.path || 'unknown'}</span>
+                      <span className="subpath-separator">/</span>
+                      <span className="sub-path">{request.subPath}</span>
+                    </div>
+                  ) : (
+                    <span className="url">{request.url}</span>
+                  )}
+                </div>
                 <span className="timestamp">
                   {new Date(request.timestamp).toLocaleTimeString()}
                 </span>

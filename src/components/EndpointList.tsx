@@ -8,6 +8,7 @@ interface EndpointListProps {
   onSelectEndpoint: (endpointId: string) => void;
   onDeleteEndpoint: (endpointId: string) => void;
   newEndpointId?: string | null; // Pass the newly created endpoint ID from parent
+  endpointsWithNewRequests?: Set<string>; // Pass endpoints that just received requests
 }
 
 export const EndpointList = ({
@@ -16,6 +17,7 @@ export const EndpointList = ({
   onSelectEndpoint,
   onDeleteEndpoint,
   newEndpointId,
+  endpointsWithNewRequests = new Set(),
 }: EndpointListProps) => {
   const [copiedEndpoints, setCopiedEndpoints] = useState<Set<string>>(new Set());
   const [animatingEndpoints, setAnimatingEndpoints] = useState<Set<string>>(new Set());
@@ -71,7 +73,7 @@ export const EndpointList = ({
           {sortedEndpoints.map((endpoint) => (
             <li
               key={endpoint.id}
-              className={`endpoint-item ${selectedEndpoint === endpoint.id ? 'selected' : ''} ${animatingEndpoints.has(endpoint.id) ? 'endpoint-new' : ''}`}
+              className={`endpoint-item ${selectedEndpoint === endpoint.id ? 'selected' : ''} ${animatingEndpoints.has(endpoint.id) ? 'endpoint-new' : ''} ${endpointsWithNewRequests.has(endpoint.id) ? 'endpoint-request' : ''}`}
               onClick={() => onSelectEndpoint(endpoint.id)}
             >
               <div className="endpoint-header">

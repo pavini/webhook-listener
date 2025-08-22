@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { HttpRequest, Endpoint } from './types';
 import { useSocket } from './hooks/useSocket';
-import { useAuth } from './hooks/useAuth';
+// import { useAuth } from './hooks/useAuth';
 import { useAnonymousSession } from './hooks/useAnonymousSession';
 import { BACKEND_URL } from './config';
 import { EndpointList } from './components/EndpointList';
 import { RequestList } from './components/RequestList';
 import { RequestDetails } from './components/RequestDetails';
 import { CreateEndpoint } from './components/CreateEndpoint';
-import { UserButton } from './components/UserButton';
+// import { UserButton } from './components/UserButton';
 import Logo from './components/Logo';
 import './App.css';
 
@@ -18,17 +18,18 @@ function App() {
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [newEndpointId, setNewEndpointId] = useState<string | null>(null);
+  const [endpointsWithNewRequests, setEndpointsWithNewRequests] = useState<Set<string>>(new Set());
   const { connected, subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion, subscribeToRequestDeletion } = useSocket();
-  const { user } = useAuth();
+  // const { user } = useAuth();
   useAnonymousSession(); // Initialize anonymous session
 
   // Clear data when user logs out
-  useEffect(() => {
-    if (!user) {
-      // User logged out, clearing authenticated data
-      // Keep endpoints and requests as they will be reloaded for anonymous user
-    }
-  }, [user]);
+  // useEffect(() => {
+  //   if (!user) {
+  //     // User logged out, clearing authenticated data
+  //     // Keep endpoints and requests as they will be reloaded for anonymous user
+  //   }
+  // }, [user]);
 
   // Helper function to make authenticated requests
   const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
@@ -77,7 +78,7 @@ function App() {
     };
 
     loadInitialData();
-  }, [user]);
+  }, []); // Removed user dependency
 
   useEffect(() => {
     const unsubscribeRequests = subscribeToRequests((request: HttpRequest) => {
@@ -87,6 +88,18 @@ function App() {
           ? { ...endpoint, requestCount: endpoint.requestCount + 1 }
           : endpoint
       ));
+      
+      // Animate the endpoint that received the request
+      setEndpointsWithNewRequests(prev => new Set(prev).add(request.endpointId));
+      
+      // Clear the animation after a delay
+      setTimeout(() => {
+        setEndpointsWithNewRequests(prev => {
+          const updated = new Set(prev);
+          updated.delete(request.endpointId);
+          return updated;
+        });
+      }, 800);
     });
 
     const unsubscribeEndpoints = subscribeToEndpoints((endpoint: Endpoint) => {
@@ -132,7 +145,7 @@ function App() {
       unsubscribeEndpointDeletion?.();
       unsubscribeRequestDeletion?.();
     };
-  }, [subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion, subscribeToRequestDeletion, user, selectedEndpoint, selectedRequest]);
+  }, [subscribeToRequests, subscribeToEndpoints, subscribeToEndpointDeletion, subscribeToRequestDeletion, selectedEndpoint, selectedRequest]); // Removed user dependency
 
   const handleCreateEndpoint = async (name: string) => {
     try {
@@ -210,7 +223,7 @@ function App() {
               {connected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
-          <UserButton />
+          {/* <UserButton /> */}
         </div>
       </header>
       
@@ -223,6 +236,7 @@ function App() {
             onSelectEndpoint={setSelectedEndpoint}
             onDeleteEndpoint={handleDeleteEndpoint}
             newEndpointId={newEndpointId}
+            endpointsWithNewRequests={endpointsWithNewRequests}
           />
         </div>
         
@@ -233,6 +247,7 @@ function App() {
               selectedRequest={selectedRequest}
               onSelectRequest={setSelectedRequest}
               onDeleteRequest={handleDeleteRequest}
+              selectedEndpoint={selectedEndpoint}
             />
           </div>
           
