@@ -226,7 +226,13 @@
 .request-list li.selected {
   background-color: var(--bg-tertiary);
   border-color: var(--accent-purple);
-  box-shadow: 0 0 0 2px rgba(189, 147, 249, 0.2);
+  box-shadow: 0 0 0 2px rgba(189, 147, 249, 0.4);
+  transform: scale(1.02);
+}
+
+.endpoint-list li.selected .endpoint-name {
+  color: var(--accent-purple);
+  font-weight: 600;
 }
 
 .endpoint-header {
@@ -379,8 +385,31 @@
   }
 }
 
+@keyframes endpointRequestPulse {
+  0% {
+    background-color: var(--bg-primary);
+    border-color: var(--border-subtle);
+    transform: scale(1);
+  }
+  30% {
+    background-color: rgba(80, 250, 123, 0.2);
+    border-color: var(--accent-green);
+    transform: scale(1.02);
+    box-shadow: 0 0 12px rgba(80, 250, 123, 0.4);
+  }
+  100% {
+    background-color: var(--bg-primary);
+    border-color: var(--border-subtle);
+    transform: scale(1);
+  }
+}
+
 .endpoint-new {
   animation: newEndpointPulse 0.8s ease-out !important;
+}
+
+.endpoint-request {
+  animation: endpointRequestPulse 0.6s ease-out !important;
 }
 
 .request-new {
@@ -482,8 +511,16 @@
 
 .request-info {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .request-info {
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
 .method {
@@ -525,6 +562,81 @@
   color: var(--fg-primary);
   flex: 1;
   font-size: 0.9rem;
+}
+
+.url-container {
+  flex: 1;
+  min-width: 0; /* Allow text to truncate properly */
+}
+
+.url-with-subpath {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+}
+
+.base-path {
+  color: var(--fg-muted);
+  font-size: 0.8rem;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.subpath-separator {
+  color: var(--accent-cyan);
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.sub-path {
+  color: var(--accent-cyan);
+  font-weight: 600;
+  background-color: rgba(139, 233, 253, 0.1);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+/* Styles for RequestDetails component */
+.url-details-with-subpath {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin-left: 0.5rem;
+}
+
+.base-path-details {
+  color: var(--fg-muted);
+  font-size: 0.85rem;
+  opacity: 0.8;
+  word-break: break-all;
+}
+
+.subpath-separator-details {
+  color: var(--accent-cyan);
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.sub-path-details {
+  color: var(--accent-cyan);
+  font-weight: 600;
+  background-color: rgba(139, 233, 253, 0.15);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  word-break: break-all;
+  box-shadow: 0 2px 4px rgba(139, 233, 253, 0.2);
 }
 
 .timestamp {
