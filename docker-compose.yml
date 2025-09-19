@@ -1,14 +1,30 @@
 version: '3.8'
 
 services:
-  hookdebug:
+  frontend:
     build:
       context: .
-      dockerfile: Dockerfile.production
+      dockerfile: Dockerfile.frontend
       no_cache: true
       args:
         CACHE_BUST: ${CACHE_BUST:-$(date +%s)}
         VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      no_cache: true
     ports:
       - "3001:3001"
     environment:
@@ -17,7 +33,7 @@ services:
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
       - FRONTEND_URL=${FRONTEND_URL}
-      - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+      - PORT=3001
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
@@ -25,10 +41,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    # Optional: Add volume for persistent data
     volumes:
       - ./data:/app/data
-    # Optional: Add logging configuration
     logging:
       driver: "json-file"
       options:
